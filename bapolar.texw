@@ -16,6 +16,8 @@
 \newcommand{\aaa}{\mathbf{a}}
 \newcommand{\bbb}{\mathbf{b}}
 \newcommand{\ccc}{\mathbf{c}}
+\newcommand{\vvv}{\mathbf{v}}
+\newcommand{\www}{\mathbf{w}}
 
 \title{Appendix: Border Apolarity Implementation}
 
@@ -101,7 +103,8 @@ from itertools import *
 
 @
 
-\code{find_simple_roots} checks the input data for correctness in various ways (see the 
+Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
+function checks checks the input data for correctness in various ways (see the 
 inline notes), and also computes the simple roots implied by the representation data.
 
 <<complete=False>>=
@@ -147,7 +150,7 @@ def find_simple_roots(T,reps):
 # border apolarity specialized to cyclic invariant tensors, so only 110
 # candidates are computed. 
 def border_apolarity_cycl_inv(T,reps,C,r):
-    mdata,em = border_apolarity_110data(T,reps,C)
+    reptp,em = Tperp_rep_and_embedding(T,reps)
     adim = len(T)
     cand110 = []
     for ghwv in grassmannian_hwvs(mdata, em.dimensions()[0]-r):
@@ -176,28 +179,6 @@ def border_apolarity_cycl_inv(T,reps,C,r):
         if W.rank() <= W.dimensions()[0] - r:
             cand110.append(W)
     return cand111,cand110
-
-@
-<<complete=False>>=
-
-# computes the weight_decomposition data of the 110, 101, or 011 space
-# (depending on missing), and the embedding Tperp -> A \ot B (for 110, eg).
-def border_apolarity_110data(T,reps,C,missing=2):
-    reps = reps[missing+1:] + reps[:missing]
-    print('Afull..')
-    Afull = module_dual(module_product(*reps))
-
-    Tperp = T
-    for i in range(missing):
-        Tperp = tensor_cycl(Tperp)
-    Tperp = matrix(QQ,[m.list() for m in Tperp],sparse=True)
-    Tperp = Tperp.right_kernel_matrix().transpose().sparse_matrix()
-
-    M = submodule_from_basis(Afull,Tperp)
-    data = weight_decomposition(M,C)
-    em = Tperp
-
-    return data,em
 
 
 @
@@ -441,18 +422,88 @@ def transpose_tensor(B,a):
         Bp[(j*a+i,k)] = B[I,k]
     return matrix(B.base_ring(),B.dimensions()[0],B.dimensions()[1],Bp)
 
-def module_product(a,b):
-    return [[x.tensor_product(identity_matrix(QQ,y.dimensions()[0],sparse=True)) +
-            identity_matrix(QQ,x.dimensions()[0],sparse=True).tensor_product(y)
-        for x,y in zip(s1,s2)] for s1,s2 in zip(a,b)]
+@
+Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
+function computes the representation of $T(C^*)^\perp \subset A^*\ot B^*$ and
+the matrix of the embedding of the distinguished weight bases of these modules.
+Optionally, the parameter \code{missing} may be set to $0$ to instead compute
+this information for $T(A^*)^\perp \subset B^*\ot C^*$ or to $1$ to do this for  
+$T(B^*)^\perp \subset C^*\ot A^*$.
+<<complete=False>>=
+def Tperp_rep_and_embedding(T,reps,missing=2):
+    reps = reps[missing+1:] + reps[:missing]
+    repAB = module_product(*[module_dual(rep) for rep in reps])
 
-def module_dual(a):
-    return [[-x.transpose() for x in s] for s in a]
+    Tcycl = T
+    for i in range(missing):
+        Tcycl = tensor_cycl(Tcycl)
+    Tflattening = matrix(QQ,[m.list() for m in Tcycl],sparse=True)
+    em = Tflattening.right_kernel_matrix().transpose().sparse_matrix()
 
-# B is a basis of column vectors for the desired submodule
-# being a submodule is not checked
-def submodule_from_basis(a,B):
-    return [[restrict_map(m,B,B) for m in s] for s in a]
+    reptp = submodule_from_basis(repAB,em)
+    return reptp,em
+
+@
+When \code{repa} and \code{repb} describe the representations of $V$, and $W$,
+respectively this function computes description of the representation of $V\ot
+W$. The distinguished weight basis of the tensor product is $v_i \ot w_j$
+ordered lexicographically, where $w_i$ and $w_j$ are the distinguished weight
+bases of $V$ and $W$, respectively. 
+<<complete=False>>=
+def module_product(repa,repb):
+    wtsa, xsa = repa
+    wtsb, xsb = repb
+    wtsab = [wta + wtb for wta,wtb in product(wtsa,wtsb)]
+    xsab = []
+    for xa,xb in zip(xsa,xsb):
+        xab = xa.tensor_product(identity_matrix(QQ,xb.nrows()))
+        xab += identity_matrix(QQ,xa.nrows()).tensor_product(xb)
+        xsab.append(xab)
+    return (wtsab,xsab)
+
+@
+When \code{rep} describe the representation of $V$,
+this function computes the description of the representation $V^*$.
+The distinguished weight basis of $V^*$ is the dual basis of that of $V$.
+<<complete=False>>=
+def module_dual(rep):
+    wts, xs = rep
+    wtsd = [-wt for wt in wts]
+    xsd = [-x.transpose() for x in xs]
+    return (wtsd,xsd)
+
+@
+Here, \code{rep} describes the representation of $V$, and \code{em} is an $\vvv \times
+\www$ matrix containing as columns a weight basis of a submodule $W$ of $V$,
+e.g., it is the matrix of the embedding $W\to V$.
+This function computes the description of the representation $W$ with respect to
+this basis. The facts that $B$ describes a weight basis and that $W$ is a
+$\BB$-submodule of $V$ are checked.
+<<complete=False>>=
+def submodule_from_basis(rep,em):
+    wts, xs = rep
+
+    # check em describes a basis
+    assert em.rank() == em.ncols()
+
+    wtsw = []
+    # check the columns of em are weight vectors and find their weights
+    for v in em.columns():
+        wt = wts[v.nonzero_positions()[0]]
+        assert all(wt == wts[j] for j in v.nonzero_positions())
+        wtsw.append(wt)
+
+    xsw = []
+    # check $W$ is fixed under the simple root vectors and compute the matrix of
+    # their action
+    for x in xs:
+        # find y solving x*em == em*y, and raises an error if there is none
+        y = em.solve_right(x*em) 
+        # Since em is basis, the eqution x*em == em*y is sufficient to
+        # guarantee the claims
+        xsw.append(y)
+
+    return (wtsw,xsw)
 
 # B: n x k matrix
 # C: m x l matrix
@@ -476,40 +527,31 @@ def restrict_map(m,C,B):
 #     raising operator. The edges are labelled with the raising operator between the
 #     corresponding weight spaces in the distinguished bases of those spaces
 # 
-def weight_decomposition(a,C):
-    tot = simultaneous_eigenspace(a[2])
+def weight_diagram(rep,simple_roots):
+    # tot = simultaneous_eigenspace(a[2])
+    wts, xs = rep
+    dim = len(wts)
 
-    totkey = lambda wt: tuple(C.solve_right(vector(QQ,wt)).list())
-    tot.sort(key=lambda p: totkey(p[1]))
+    assert all(x.nrows() == dim and x.ncols() == dim for x in xs)
 
-    M = {wt:V for V,wt in tot}
-    tot = [(wt,V.dimensions()[1]) for V,wt in tot]
+    wtd = DiGraph()
+    for bi,wt in enumerate(wts):
+        wt.set_immutable()
+        if wt not in wtd:
+            wtd.add_vertex(wt)
+            wtd.set_vertex(wt,[])
+        wtd.get_vertex(wt).append(bi)
 
-    wtg = DiGraph()
-    for p in tot:
-        wt, mult = p
-        B = M[wt]
-        for i,x in enumerate(a[0]):
-            wt2 = tuple((C[:,i] + vector(wt).column()).list())
-            if wt2 in M:
-                wtg.add_edge(p,(wt2,M[wt2].dimensions()[1]),restrict_map(x,M[wt2],B))
-
-    return { 'M' : M, 'tot' : tot, 'C': C, 'a': a, 'wtg': wtg }
-
-# ms : list of matrices over QQ which commute and are diagonalizable
-# 
-# computes the simultaneous eigenspaces of ms
-def simultaneous_eigenspace(ms):
-    n = ms[0].dimensions()[0]
-    spaces = [(identity_matrix(n,sparse=True) ,())]
-    for m in ms:
-        nspaces = []
-        for B,wt in spaces:
-            for wt0,W in restrict_map(m,B,B).eigenspaces_right():
-                W = W.basis_matrix().transpose().sparse_matrix()
-                nspaces.append((B*W,wt+(wt0,)))
-        spaces = nspaces
-    return spaces
+    for wt in wtd:
+        wt.set_immutable()
+        for root,x in zip(simple_roots,xs):
+            wt_raised = immut(wt + root)
+            wt_raised.set_immutable()
+            if wt_raised in wtd:
+                wtd.add_edge(wt,wt_raised,
+                        x[wtd.get_vertex(wt_raised),wtd.get_vertex(wt)])
+    
+    return wtd
 
 # T : tensor in A ot B ot C
 #
@@ -752,14 +794,10 @@ class MPolyQuoLocElement(CommutativeRingElement):
     def __hash__(self):
         return hash((self._p,self._k))
 
-# vim: ft=python
+def immut(obj):
+    obj.set_immutable()
+    return obj
 @
 
 
-\begin{thebibliography}{9}
-  \bibitem{levendovsky}
-  Levandovskyy, V. Non-commutative Computer Algebra for polynomial algebras:
-  Gr\"obner bases, applications and implementation. Doctoral Thesis,
-  Universit\"at Kaiserslautern, 2005. Available online at http://kluedo.ub.uni-kl.de/volltexte/2005/1883/.articular 
-\end{thebibliography}
 \end{document}
