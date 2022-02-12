@@ -149,8 +149,11 @@ def find_simple_roots(T,reps):
 
 # border apolarity specialized to cyclic invariant tensors, so only 110
 # candidates are computed. 
-def border_apolarity_cycl_inv(T,reps,C,r):
+def border_apolarity_cycl_inv(T,reps,r):
     reptp,em = Tperp_rep_and_embedding(T,reps)
+    wtd = weight_diagram(reptp)
+    # TODO fix after
+
     adim = len(T)
     cand110 = []
     for ghwv in grassmannian_hwvs(mdata, em.dimensions()[0]-r):
@@ -197,6 +200,38 @@ def grassmannian_hwvs(mdata,subdim,verbose=True):
             yield hwt
 
 @
+\subsection {$\BB$-fixed subspace enumeration}
+
+For a module $M$, $\BB$-fixed subspaces are parameterized by a choices of 
+subspaces $S_\lambda \subset M_\lambda$ where $x. S_\lambda \subset S_\mu$ for
+every raising operator $x$ corresponding to an arrow $M_\lambda \to M_\mu$ in the
+weight diagram (see \S2.5.2 of the article). This parameterization is composed
+of two components, the combinatorial data $d_\lambda =
+\operatorname{dim} S_\lambda$, and the subvariety $Y_{d_\lambda}$ of the product of
+Grassmannians $X_{d_\lambda} = \prod_{\lambda} G(M_\lambda,d_\lambda)$ corresponding to
+the condition on weight diagram arrows above.
+
+For fixed $D$, most assignments $\lambda \mapsto d_\lambda$ satisfying
+$\sum_\lambda d_\lambda = D$ have $Y_d = \varnothing$, and to explicitly check
+each such $d_\lambda$ would be impossible. Hence, we investigate only such assignments
+$d_\lambda$ satisfying necessary conditions for $Y_d\ne \varnothing$. These conditions
+take the form of linear inequalities. Thus, the assignments
+we explicitly consider occur as the set of integer points of a
+polytope, which can be efficiently enumerated.
+
+
+% We may parameterize the $\fb_T$ fixed subspaces $M$ of dimension $d$ as follows: Fix an assignment of dimensions $d_\lambda$, $0\le d_\lambda \le \tdim M_\lambda$,
+% $\sum_\lambda d_\lambda = d$. Choices of $S_\lambda$ with $\dim S_\lambda = d_\lambda$ are
+% parameterized by the product of Grassmannians $X = \prod_{\lambda} G(M_\lambda,d_\lambda)$.
+% Given a raising operator $x$ corresponding to an arrow $M_\lambda \to M_\mu$ in the
+% weight diagram, the condition that $x. S_\lambda
+% \subset S_{\mu}$ is an explicit polynomial condition on $X$. Cutting
+% $X$ by all such polynomials gives a description of the set of $\fb_T$ fixed
+% subspaces with $\dim S_\lambda = d_\lambda$ (which can be empty). All Borel fixed
+% subspaces are obtained as $d_\lambda$ ranges over all such assignments.
+% In small examples, a complete list of $\fb_T$ fixed subspaces may frequently be
+% read off of the weight diagram.
+
 <<complete=False>>=
 
 # For a fixed choice of subspace dimensions for each weight space (given by up),
@@ -291,66 +326,74 @@ def grassmannian_hwvs_for_upset(mdata,up,verbose=False):
 # grassmannian highest weight vector which contains at least all legal choices. 
 
 @
+Given a weight diagram \code{wtd} and a target dimension \code{dim}, this
+function computes the linear program corresponding to the following necessary
+conditions that assignments $d_\lambda$ have $Y_{d_\lambda}\ne \varnothing$ (and
+        $\sum_\lambda d_\lambda = \code{dim}$):
+\begin{enumerate}
+\item \label{primal} Suppose that $M_\mu \to M_{\lambda_i}$ in the weight diagram, where
+$\lambda_i$ ranges over some set of weights. The map 
+$y : M_\mu \to \bigoplus_{i} M_{\lambda_i}$ 
+satisfies 
+$y (S_\mu) \subset \bigoplus_{i} S_{\lambda_i}$. 
+In particular, 
+$d_\mu \le \operatorname{dim} \operatorname{ker} y + \sum_{i}
+d_{\lambda_i}$.
+
+\item \label{dual} Dually, suppose that $M_{\mu_i} \to M_\lambda$ in the weight diagram, where
+$\mu_i$ ranges over some set of weights. The map 
+$z : M_\lambda^* \to \bigoplus_{i} M_{\mu_i}^*$ 
+satisfies 
+$z (S_\lambda^\perp) \subset \bigoplus_{i} S_{\mu_i}^\perp$. 
+In particular, 
+$\operatorname{dim}M_\lambda - d_\lambda \le \operatorname{dim}
+\operatorname{ker} z + \sum_{i}
+\operatorname{dim}(M_{\mu_i}) - d_{\mu_i}$.
+
+\item \label{composition} One can apply the previous conditions to compositions of arrows in the
+weight diagram. We use only the condition corresponding to a single 
+arrow $w : M_\mu \to M_\nu \to M_\lambda$. For a single arrow, conditions (\ref{primal})
+        and (\ref{dual}) are the same: $d_\mu \le
+        \operatorname{ker}\operatorname{dim} w + d_\lambda$.
+\end{enumerate}
 <<complete=False>>=
 
-# This is done by deriving inequalities all legal such choices must satisfy
-# and enumerating the integer points in the resulting polytope.
-def grassmannian_hwvs_upsets(mdata,sz):
-    M = mdata['M']
-    C = mdata['C']
-    X,Y,H = mdata['a']
-    tot = mdata['tot']
-    wtg = mdata['wtg']
-
+def dim_assignment_polytope(wtd,dim):
     lp = MixedIntegerLinearProgram()
-    for p in tot:
-        wt, mult = p
-        lp.set_min(lp[p],0)
-        lp.set_max(lp[p],mult)
+    for wt in wtd:
+        lp.set_min(lp[wt],0)
+        lp.set_max(lp[wt],len(wtd.get_vertex(wt)))
 
-    lp.add_constraint(lp.sum(lp[p] for p in tot) == sz)
+    lp.add_constraint(lp.sum(lp[wt] for wt in wtd) == dim)
 
-    for p in tot:
+    for wt in wtd:
+        # Condition $(\ref{primal})$
+        for k in range(1,len(wtd.outgoing_edges(wt))+1):
+            for es in combinations(wtd.outgoing_edges(wt),k):
+                kdim = block_matrix([[xr] for _,_,xr in es]).right_kernel().dimension()
+                lp.add_constraint(lp[wt] <= kdim + lp.sum(lp[wtr] for _,wtr,_ in es))
 
-        for k in range(1,len(wtg.outgoing_edges(p))+1):
-            for es in combinations(wtg.outgoing_edges(p),k):
-                kdim = block_matrix([[xr] for _,q,xr in es]).right_kernel().dimension()
-                lp.add_constraint(lp[p] <= lp.sum(lp[q] for _,q,xr in es) + kdim)
+        # Condition $(\ref{dual})$
+        # This when $k = 1$ occurs also for condition $(\ref{primal})$ as well, so we skip it.
+        for k in range(2,len(wtd.incoming_edges(wt))+1):
+            for es in combinations(wtd.incoming_edges(wt),k):
+                cokdim = block_matrix([[-xr.transpose()] 
+                    for _,_,xr in es]).right_kernel().dimension()
+                lp.add_constraint(len(wtd.get_vertex(wt)) - lp[wt] <= cokdim + lp.sum(
+                    len(wtd.get_vertex(wtl)) - lp[wtl] for wtl,_,xr in es))
 
-        for k in range(2,len(wtg.incoming_edges(p))+1):
-            for es in combinations(wtg.incoming_edges(p),k):
-                cokdim = block_matrix([[xr.transpose()] 
-                    for q,_,xr in es]).right_kernel().dimension()
-                lp.add_constraint(p[-1] - lp[p] <= lp.sum(
-                    q[-1] - lp[q] for _,q,xr in es) + kdim)
-
-    for p in tot:
-        for _,q,x1 in wtg.outgoing_edges(p):
-            for _,w,x2 in wtg.outgoing_edges(q):
+    # Condition $(\ref{composition})$
+    for wtstart in wtd:
+        for _,wtmid,x1 in wtd.outgoing_edges(wt):
+            for _,wtlast,x2 in wtd.outgoing_edges(wtmid):
                 kdim = (x2*x1).right_kernel().dimension()
-                lp.add_constraint(lp[p] <= lp[w] + kdim)
+                lp.add_constraint(lp[wtstart] <= lp[wtlast] + kdim)
 
-    from sage.numerical.mip import MIPSolverException
-    def dfs(i):
-        if i == len(tot):
-            yield [(p,int(lp.get_min(lp[p]))) for p in tot if int(lp.get_min(lp[p])) > 0]
-            return
-        p = tot[i]
-        wt, mult = p
-        for val in range(0, mult+1):
-            lp.set_min(lp[p],val)
-            lp.set_max(lp[p],val)
-            try:
-                lp.solve()
-                for up in dfs(i+1):
-                    yield up
-            except MIPSolverException:
-                pass
-        lp.set_min(lp[p],0)
-        lp.set_max(lp[p],mult)
+    return lp
 
-    print(len(list(dfs(0))))
-    return dfs(0)
+@
+\subsection{$(210)$ and $(120)$ tests}
+<<complete=False>>=
 
 # takes a grassmannian candidate, represented as the column space of the matrix
 # W, possibly with parameters, and performs the 210 and 120 tests. If no
@@ -423,6 +466,8 @@ def transpose_tensor(B,a):
     return matrix(B.base_ring(),B.dimensions()[0],B.dimensions()[1],Bp)
 
 @
+
+\subsection{Representation manipulation}
 Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
 function computes the representation of $T(C^*)^\perp \subset A^*\ot B^*$ and
 the matrix of the embedding of the distinguished weight bases of these modules.
@@ -505,13 +550,13 @@ def submodule_from_basis(rep,em):
 
     return (wtsw,xsw)
 
-# B: n x k matrix
-# C: m x l matrix
-# m: m x n matrix mapping the column space of B to the column space of C
-# returns the l x k matrix representing m in the bases B and C
-def restrict_map(m,C,B):
-    I = C.pivot_rows()
-    return C[I,:].solve_right((m*B)[I,:])
+# # B: n x k matrix
+# # C: m x l matrix
+# # m: m x n matrix mapping the column space of B to the column space of C
+# # returns the l x k matrix representing m in the bases B and C
+# def restrict_map(m,C,B):
+#     I = C.pivot_rows()
+#     return C[I,:].solve_right((m*B)[I,:])
 
 # a : a representation of L
 # C : the cartan matrix of the semisimple part of L
@@ -553,16 +598,9 @@ def weight_diagram(rep,simple_roots):
     
     return wtd
 
-# T : tensor in A ot B ot C
-#
-# returns T permuted to lie in B ot C ot A
-def tensor_cycl(T):
-    m = len(T)
-    n,s = T[0].dimensions()
-    S = [zero_matrix(QQ,s,m) for i in range(n)]
-    for i,j,k in product(range(m),range(n),range(s)):
-        S[j][k,i] = T[i][j,k]
-    return S
+@
+\subsection{Equations for matrices of rank $\le r$}
+<<complete=False>>=
 
 # M : matrix
 # r : natural number 
@@ -794,9 +832,25 @@ class MPolyQuoLocElement(CommutativeRingElement):
     def __hash__(self):
         return hash((self._p,self._k))
 
+@
+\subsection{Miscellaneous}
+<<complete=False>>=
+
+# T : tensor in A ot B ot C
+#
+# returns T permuted to lie in B ot C ot A
+def tensor_cycl(T):
+    m = len(T)
+    n,s = T[0].dimensions()
+    S = [zero_matrix(QQ,s,m) for i in range(n)]
+    for i,j,k in product(range(m),range(n),range(s)):
+        S[j][k,i] = T[i][j,k]
+    return S
+
 def immut(obj):
     obj.set_immutable()
     return obj
+
 @
 
 
