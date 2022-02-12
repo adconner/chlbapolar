@@ -238,6 +238,9 @@ polytope, which can be efficiently enumerated.
 # this function returns a generator yielding the set of highest weight vectors
 # for the module given by mdata
 def grassmannian_hwvs_for_upset(mdata,up,verbose=False):
+    wtd = weight_diagram(rep,simple_roots)
+    # TODO
+
     C = mdata['C']
     A = mdata['a']
     M = mdata['M']
@@ -327,9 +330,9 @@ def grassmannian_hwvs_for_upset(mdata,up,verbose=False):
 
 @
 Given a weight diagram \code{wtd} and a target dimension \code{dim}, this
-function computes the linear program corresponding to the following necessary
-conditions that assignments $d_\lambda$ have $Y_{d_\lambda}\ne \varnothing$ (and
-        $\sum_\lambda d_\lambda = \code{dim}$):
+function computes the integer points $d_\lambda$ of the polytope corresponding
+to the following necessary conditions that assignments $d_\lambda$ have
+$Y_{d_\lambda}\ne \varnothing$ (and $\sum_\lambda d_\lambda = \code{dim}$):
 \begin{enumerate}
 \item \label{primal} Suppose that $M_\mu \to M_{\lambda_i}$ in the weight diagram, where
 $\lambda_i$ ranges over some set of weights. The map 
@@ -358,7 +361,7 @@ arrow $w : M_\mu \to M_\nu \to M_\lambda$. For a single arrow, conditions (\ref{
 \end{enumerate}
 <<complete=False>>=
 
-def dim_assignment_polytope(wtd,dim):
+def possible_dim_assignments(wtd,dim):
     lp = MixedIntegerLinearProgram()
     for wt in wtd:
         lp.set_min(lp[wt],0)
@@ -389,7 +392,43 @@ def dim_assignment_polytope(wtd,dim):
                 kdim = (x2*x1).right_kernel().dimension()
                 lp.add_constraint(lp[wtstart] <= lp[wtlast] + kdim)
 
-    return lp
+    # We have computed the polytope, now enumerate the integer points
+
+    # Fix an ordering of the weights $\lambda_i$
+    wts = wtd.topological_sort()
+
+    # Given assignments of $d_{\lambda_j}$, $j\le i-1$, set $d_{\lambda_i}$ to the values for which the 
+    # polytope still intersects the coordinate hyperplane corresponding to the
+    # current partial assignment and recursively apply this procedure.
+    from sage.numerical.mip import MIPSolverException
+    def dfs(i):
+        if i == len(wts):
+            # We have set all coordinates to integer values and remain in the
+            # polytope, report this as a solution
+            yield {wt : int(lp.get_min(lp[wt])) for wt in wts}
+            return
+        wt = wts[i]
+        mult = int(lp.get_max(lp[wt]))
+        for dcur in range(0, mult+1):
+            lp.set_min(lp[wt],dcur)
+            lp.set_max(lp[wt],dcur)
+            try:
+                # The polytope has nonzero intersection with set corresponding
+                # to fixing the first $i$ coordinates as we have. Recursively try 
+                # to set the remaining coordinates and report all solutions.
+                lp.solve()
+                for pt in dfs(i+1):
+                    yield pt
+            except MIPSolverException:
+                # There are no points in the polytope with the first $i$
+                # coordinates fixed to the values we have used. Don't search
+                # further.
+                pass
+        lp.set_min(lp[wt],0)
+        lp.set_max(lp[wt],mult)
+
+    # print(len(list(dfs(0))))
+    return dfs(0)
 
 @
 \subsection{$(210)$ and $(120)$ tests}
