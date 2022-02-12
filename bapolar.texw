@@ -7,50 +7,57 @@
 \newtheorem{observation}[theorem]{Observation}
 \newtheorem{lemma}[theorem]{Lemma}
 
-\newcommand{\CC}{\mathbb{C}}
-\newcommand{\ot}{\otimes}
-
-\newcommand{\abs}[1]{\lvert #1 \rvert}
-\newcommand{\Abs}[1]{\left\lvert #1 \right\rvert}
-\newcommand{\norm}[1]{\lVert #1 \rVert}
-
 \newcommand{\code}[1]{\mintinline{python}{#1}}
 
-\DeclareMathOperator{\LT}{LT}
-\DeclareMathOperator{\LM}{LM}
-\DeclareMathOperator{\Lm}{\textsc{Lm}}
-\DeclareMathOperator{\ltcoeff}{\textsc{LtCoeff}}
-\DeclareMathOperator{\wt}{wt}
+\newcommand{\CC}{\mathbb{C}}
+\newcommand{\BB}{\mathbb{B}}
+\newcommand{\ot}{\otimes}
+\newcommand{\op}{\oplus}
 
-\title{Border apolarity implementation}
-\author{Austin Conner}
+\title{Appendix: Border Apolarity Implementation}
 
 \begin{document}
-% \maketitle
+\maketitle
 \section{Introduction}\label{sec:intro}
-Given a tensor $T \in A \ot B\ot C$, a natural number $r$, and a solvable
-connected Lie group $B \subset \operatorname{GL}(A) \times \operatorname{GL}(B)
-\times \operatorname{GL}(C)$ stabilizing $T$, the routines of this file seek to
-practically implement complete enumeration of multigraded ideals $I\subset
-\operatorname{Sym}(A^* \oplus B^* \oplus C^*)$ satisfying
-\begin{enumerate}
-\item \label{Bfixed} I is $B$-fixed
-\item \label{inTperp} $I \subset T^\perp$
-\item \label{codim} The $(ijk)$-graded component of $I$, $I_{ijk} \subset S^i(A^*)\ot S^j(B^*)
-\ot S^k(C^*)$, has codimension $\min (r, \dim S^i(A^*)\ot S^j(B^*) \ot
-S^k(C^*))$.
-\end{enumerate}
+Given a tensor $T \in A \ot B\ot C$, a natural number $r$, and a reductive group
+$G_T \subset \operatorname{GL}(A) \times \operatorname{GL}(B)
+\times \operatorname{GL}(C)$ stabilizing $T$, this file implements complete
+enumeration of candidate subspaces $F_{110}\subset T(C^*)^\perp \subset A^*\ot
+B^*$ which (i) have codimension $r$ in $A^*\ot B^*$, (ii)
+are fixed under the Borel $\BB_T$ of $G$, and (iii) which pass the (210) and (120)
+tests. That is, for such $F_{110}$, the symmetrization maps
+\begin{align}
+&\label{f210} F_{110}\ot A^*\to S^2 A^*\ot B^* \text { and}\\
+&\label{f120} F_{110}\ot B^*\to A^*\ot S^2 B^*
+\end{align}
+have image of codimension at least $r$. More precisely, we enumerate
+the matrices representing such subspaces $F_{110}$ in fixed bases.
+Such candidates may occur in positive dimensional families, so these matrices
+may have entries in the coordinate ring of some affine variety.
 
-Such ideals may occur in positive dimensional families, so more precisely we
-wish to enumerate computational descriptions of families of ideals which
-together exhaust all ideals satisfying the conditions. The kinds of families of
-ideals manipulated by the program are described in \S\ref{sec:representation}
-and called \emph{representable}. A representable family of ideals $I_t$ always
-satisfies conditions (\ref{Bfixed}) and (\ref{inTperp}) above, and $t$ ranges
-over an affine variety. Hence, the work of the program is to enumerate an
-exhaustive list of representable families satisfying condition (\ref{codim}). 
-The program proceeds by exhaustively enlarging ideals so that condition (\ref{codim}) is
-satisfied one multidegree at a time.
+The same computation with the roles of $A$, $B$, and $C$ permuted may be
+performed to enumerate the candidate $F_{101}$ and $F_{011}$ subspaces.
+Given a triple of candidates $(F_{110}, F_{101}, F_{011})$, a routine to apply
+the (111)-test is provided. That is, the map
+\begin{equation}\label{111map}
+F_{110}\ot C^*\op F_{101}\ot B^*\op F_{011}\ot A^* \to A^*\ot B^*\ot C^*
+\end{equation}
+is implemented, and it may be checked if the codimension of its image is at
+least $r$.
+
+\subsection{Input description}\label{sec:input}
+
+Choose bases of $A$, $B$ and $C$ consisting of weight vectors under the torus of
+$G_T$. The tensor $T$ is described by its coefficients with respect to these
+bases. The action of $\BB_T$ is described by the weights of the basis vectors
+along with the representations $\mathfrak{n} \to
+\mathfrak{gl}(A)$, $\mathfrak{n} \to \mathfrak{gl}(B)$, and $\mathfrak{n} \to
+\mathfrak{gl}(C)$. Concretely, Representations of $\mathfrak{n}$ are described
+by giving the matrix of the action of the simple root vectors in the
+distinguished bases.
+
+The function \code{check_input} takes $T$ and this representation data and
+ensures that $T$ is actually fixed by the representation. % move to later
 
 \subsection{Software used}
 
@@ -59,25 +66,11 @@ The code is written in Python 3, using the libraries provided by SageMath.
 \section{Program Listing}
 
 <<complete=False>>=
-# In this file, modules of semisimple lie algebras represented in code in the
-# following way:
-# Distinguish primitive positive root vectors x_1, ..., x_r. These determine 
-# corresponding h_i and y_i so that [x_i,y_i] = h_i, [h_i, x_i] = 2x_i and 
-# [h_i,y_i] = -2y_i. 
-
-# Representations will be specified by giving the action of these three lists of
-# elements. Explicitly, if V is a representation of L of dimension n, V will be
-# described by [ [ X_1, ..., X_r], [Y_1, ..., Y_r], [H_1, ..., H_r] ], where
-# the X_i, Y_i and H_i are n x n matrices.
-
-# weights will be described by the list of their values on the H_i, which are
-# necessarily integers
-
-# In addition to the representations in the above form, routines of this file
-# also require the cartan matrix of L, with rows and columns ordered to
-# correspond with the x_i.
 
 from itertools import *
+
+@
+<<complete=False>>=
 
 # border apolarity specialized to cyclic invariant tensors, so only 110
 # candidates are computed. 
@@ -112,6 +105,9 @@ def border_apolarity_cycl_inv(T,reps,C,r):
             cand110.append(W)
     return cand111,cand110
 
+@
+<<complete=False>>=
+
 # computes the weight_decomposition data of the 110, 101, or 011 space
 # (depending on missing), and the embedding Tperp -> A \ot B (for 110, eg).
 def border_apolarity_110data(T,reps,C,missing=2):
@@ -131,10 +127,13 @@ def border_apolarity_110data(T,reps,C,missing=2):
 
     return data,em
 
-# This function returns a generator yielding the set of highest weight vectors 
-# of the grassmannian, each possibly parameterized (having entries in a
-# polynomial ring modulo an ideal). The grassmannian planes are represented 
-# as the column space of matrices.
+
+@
+This function returns a generator yielding the set of highest weight vectors 
+of the grassmannian, each possibly parameterized (having entries in a
+polynomial ring modulo an ideal). The grassmannian planes are represented 
+as the column space of matrices.
+<<complete=False>>=
 
 # mdata is the information for the module as summarized by weight_decomposition
 # subdim determines which grassmannian to consider (the dimension of the returned spaces)
@@ -143,6 +142,9 @@ def grassmannian_hwvs(mdata,subdim,verbose=True):
         if verbose: print(upi,end=' ')
         for hwt in grassmannian_hwvs_for_upset(mdata,up,verbose):
             yield hwt
+
+@
+<<complete=False>>=
 
 # For a fixed choice of subspace dimensions for each weight space (given by up),
 # this function returns a generator yielding the set of highest weight vectors
@@ -234,6 +236,9 @@ def grassmannian_hwvs_for_upset(mdata,up,verbose=False):
 
 # Returns an iterator over a set of choices of subspace dimensions for a
 # grassmannian highest weight vector which contains at least all legal choices. 
+
+@
+<<complete=False>>=
 
 # This is done by deriving inequalities all legal such choices must satisfy
 # and enumerating the integer points in the resulting polytope.
