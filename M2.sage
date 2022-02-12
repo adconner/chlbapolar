@@ -20,13 +20,10 @@ C = matrix(QQ,[[2, 0, 0], [0, 2, 0], [0, 0, 2]])
 # x^2_2 y^1_2 (34,36) -> x^1_1 y^2_1
 
 def new_from_old(reps):
-    wtss = []
     repsn = []
     for xs,ys,hs in reps:
-        repsn.append(xs)
-        assert all(h.is_diagonal() for h in hs)
-        wtss.append([vector(ZZ,h.diagonal()) for h in hs])
-    return wtss, repsn
+        repsn.append((([vector(ZZ,[h[i,i] for h in hs]) for i in range(hs[0].nrows())]),xs))
+    return repsn
 
 # vim: ft=python
  

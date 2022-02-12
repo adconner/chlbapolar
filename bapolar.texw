@@ -105,39 +105,37 @@ from itertools import *
 inline notes), and also computes the simple roots implied by the representation data.
 
 <<complete=False>>=
-def find_simple_roots(T,wtss,reps):
+def find_simple_roots(T,reps):
     a = len(T)
     b,c = T[0].dimensions()
 
     # There is one weight for each basis vector
-    assert all(len(wts) == d for d,wts in zip((a,b,c),wtss))
+    assert all(len(wts) == d for d,(wts,_) in zip((a,b,c),reps))
     # The given representations of $\mathfrak{n}$ operate on the correct dimensional space
-    assert all(m.nrows() == d and m.ncols() == d 
-            for d,rep in zip((a,b,c),reps) for m in rep)
+    assert all(x.nrows() == d and x.ncols() == d 
+            for d,(_,xs) in zip((a,b,c),reps) for x in xs)
 
-    # compute roots of 
+    # compute roots of the simple roots vectors xs
     simple_roots = []
-    for ri in range(len(reps[0])):
-        for wts,rep in zip(wtss,reps):
-            try:
-                i,j = rep[ri].nonzero_positions()[0]
+    for xi in range(len(reps[0][1])):
+        for wts,xs in reps:
+            if not xs[xi].is_zero():
+                i,j = xs[xi].nonzero_positions()[0]
                 simple_roots.append(wts[i] - wts[j])
                 break
-            except IndexError:
-                pass
 
-    # Check reps are actally root vectors for the corresponding roots and that 
+    # Check xs are actally root vectors for the corresponding roots and that 
     # the simple roots agree for each rep in reps
-    for wts,rep in zip(wtss,reps):
-        assert len(simple_roots) == len(rep)
-        for root,m in zip(simple_roots,rep):
-            for i,j in m.nonzero_positions():
+    for wts,xs in reps:
+        assert len(simple_roots) == len(xs)
+        for root,x in zip(simple_roots,xs):
+            for i,j in x.nonzero_positions():
                 assert wts[i]-wts[j] == root
 
     # Check T is weight zero in $A\ot B\ot C$
     for i,m in enumerate(T):
         for j,k in m.nonzero_positions():
-            assert (wtss[0][i] + wtss[1][j] + wtss[2][k]).is_zero()
+            assert (reps[0][0][i] + reps[1][0][j] + reps[2][0][k]).is_zero()
 
     # TODO check if t is closed under the action of $\mathfrak{n}$
 
