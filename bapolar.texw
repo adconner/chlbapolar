@@ -384,10 +384,10 @@ def possible_dim_assignments(wtd,dim):
 
     # Condition $(\ref{composition})$
     for wtstart in wtd:
-        for _,wtmid,x1 in wtd.outgoing_edges(wt):
+        for _,wtmid,x1 in wtd.outgoing_edges(wtstart):
             for _,wtlast,x2 in wtd.outgoing_edges(wtmid):
                 kdim = (x2*x1).right_kernel().dimension()
-                lp.add_constraint(lp[wtstart] <= lp[wtlast] + kdim)
+                lp.add_constraint(lp[wtstart] <= kdim + lp[wtlast])
 
     # We have computed the polytope, now enumerate the integer points
 
