@@ -290,13 +290,6 @@ def borel_fixed_subspaces_dlambda(wtd,dlambda,verbose=False):
                 xi += inc 
 
             S[wt] = (t, nz) # remember the pivots for equations below
-        # cur = block_matrix([[B for B,m,f in W.values()]],subdivide=False)
-
-        # Now we restrict the parameters of cur to those for which the
-        # corresponding subspace is closed under raising operators. In the below,
-        # eqs will be populated with the corresponding list of polynomial
-        # conditions on the parameters
-
 
         # Now restrict the parameters appearing so that $S$ is closed under the
         # arrows of the weight diagram
