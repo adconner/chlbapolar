@@ -16,8 +16,10 @@
 \newcommand{\aaa}{\mathbf{a}}
 \newcommand{\bbb}{\mathbf{b}}
 \newcommand{\ccc}{\mathbf{c}}
+\newcommand{\uuu}{\mathbf{u}}
 \newcommand{\vvv}{\mathbf{v}}
 \newcommand{\www}{\mathbf{w}}
+\newcommand{\sss}{\mathbf{s}}
 
 \title{Appendix: Border Apolarity Implementation}
 
@@ -429,7 +431,7 @@ def possible_dim_assignments(wtd,dim):
     return dfs(0)
 
 @
-\subsection{$(210)$ and $(120)$ tests}
+\subsection{$(210)$ and $(120)$ symmetrization maps, $(111)$ addition map}
 <<complete=False>>=
 
 # takes a grassmannian candidate, represented as the column space of the matrix
@@ -450,8 +452,16 @@ def AB_grass_restrict_ok(W,adim,r):
     S = W.base_ring().quo(eqs)
     return W.change_ring(S)
 
-# takes a set of vectors I in A \ot B (in the form of an ab x S matrix), and
-# returns a matrix whose columns span A*I subset S^2(A) \ot B
+
+@
+If $B$ is the $\aaa \bbb\times \vvv$ matrix of a map $V \to A\ot B$ with respect
+to an lexicographically ordered basis of $A\ot B$ of the form $a_i \ot b_j$,
+this routine computes the matrix of the map $V \ot A \to S^2 A\ot B$. The bases
+of the tensor products are also lexicographically ordered tensor
+products. The basis $a_ia_j$, $i\le j$, of $S^2 A$ is ordered reverse
+lexicographically: $a_{i_1}a_{j_1} $ comes before $a_{i_2}a_{j_2}$ if either
+$j_1 < j_2$ or $j_1=j_2$ and $i_1 < i_2$.
+<<complete=False>>=
 def matrix_11_to_21(B,a):
     b = B.dimensions()[0] // a
     S = B.dimensions()[1]
@@ -469,7 +479,16 @@ def matrix_11_to_21(B,a):
     W = matrix(B.base_ring(),binomial(a+1,2)*b,S*a,W)
     return W
 
-# A is bc x S, B is ca x U, C is ab x V
+@
+Suppose $A$,$B$, and $C$ are $\bbb\ccc \times \sss$, $\ccc\aaa \times \uuu$, and
+$\aaa\bbb \times \vvv$ matrices corresponding to maps $S \to B\ot C$, $U\to C\ot
+A$, $V\to A\ot B$, respectively. It is assumed that all tensor products are
+given with respect to lexicograpcally ordered product bases. This routine
+computes the matrix corresponding to the addition map 
+$ S\ot A \op U\ot B \op V \ot C \op B \to A\ot B\ot C$. Here tensor products are
+given by lexicographically ordered product bases, and the basis of the direct sum
+is the concatenation of the bases of the summands.
+<<complete=False>>=
 def matrix_to_111(A,B,C):
     a = int(sqrt(B.dimensions()[0]*C.dimensions()[0]/A.dimensions()[0]))
     b = C.dimensions()[0] // a
@@ -623,7 +642,7 @@ def weight_diagram(rep,simple_roots):
     return wtd
 
 @
-\subsection{Equations for matrices of rank $\le r$}
+\subsection{Efficiently computing the ideal of $r\times r$ minors}
 <<complete=False>>=
 
 # M : matrix
