@@ -587,28 +587,15 @@ def submodule_from_basis(rep,em):
 
     return (wtsw,xsw)
 
-# # B: n x k matrix
-# # C: m x l matrix
-# # m: m x n matrix mapping the column space of B to the column space of C
-# # returns the l x k matrix representing m in the bases B and C
-# def restrict_map(m,C,B):
-#     I = C.pivot_rows()
-#     return C[I,:].solve_right((m*B)[I,:])
+@
+Given a representation \code{rep} and the set of simple roots consistent with
+it, this routine computes the corresponding weight diagram, a directed graph
+with vertices labelled by weights and with edges labelled with the matrix of the restriction
+of the corresponding raising operator. Each vertex records the ordered list of
+corresponding distinguished weight basis vectors (with respect to which the edge
+matrices are given).
+<<complete=False>>=
 
-# a : a representation of L
-# C : the cartan matrix of the semisimple part of L
-#
-# computes a dictionary summarizing info of this representation. In particular,
-# the keys of the returned dictionary are
-# 'M': a dictionary mapping weights to a distinguished basis of the corresponding weight space
-# 'C': The Cartan matrix of L
-# 'a': the representation
-# 'tot': a distinguished total ordering of the weights compatible with P; for
-#     convenience weights are given along with the multiplicity of the weight space
-# 'wtg': directed graph with a vertex for each weight and an edge for each
-#     raising operator. The edges are labelled with the raising operator between the
-#     corresponding weight spaces in the distinguished bases of those spaces
-# 
 def weight_diagram(rep,simple_roots):
     # tot = simultaneous_eigenspace(a[2])
     wts, xs = rep
@@ -730,7 +717,6 @@ T & A \\
 where $T$ is $r\times r$, upper triangular, with ones on the diagonal, and $B$
 contains no unit coefficients.
 <<complete=False>>=
-
 def elimination_by_units(m,I):
     m = m.copy()
 
