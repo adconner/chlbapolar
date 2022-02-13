@@ -99,6 +99,7 @@ a vector of integers.
 <<complete=False>>=
 
 from __future__ import print_function
+from IPython import embed
 from itertools import *
 
 @
@@ -646,7 +647,14 @@ def matrix_rank_le_eqs(M,r):
     if M.base_ring() is QQ:
         return [1] if M.rank() > r else []
     else:
-        return list(minors_ideal(M,r+1).basis)
+        try:
+            I = M.base_ring().defining_ideal()
+            M = M.apply_map(lambda e: e.lift())
+            return list(minors_ideal(M,r+1,I).basis)
+        except AttributeError:
+
+            return list(minors_ideal(M,r+1).basis)
+
 
 # M : matrix with base ring a polynomial ring over QQ or a quotient of such by an ideal
 # nminors: a parameter determining when to revert to the base case in the
@@ -654,219 +662,103 @@ def matrix_rank_le_eqs(M,r):
 #    performance may be tuned
 #
 # returns the radical of the ideal of r by r minors of m
-def minors_ideal(M,r):
+def minors_ideal(m,r,I=None):
     from collections import Counter
-    Rorig = M.base_ring()
 
-    if M.is_zero() or r > min(*M.dimensions()): 
-        return Rorig.ideal()
-    M,lo = sparse_elimination_by_units(M)
-    if r <= lo:
-        return Rorig.ideal(1)
-    r -= lo
-    M = M[lo:,lo:] 
-    if M.is_zero():
-        return Rorig.ideal()
-    M = M[[i for i in range(M.dimensions()[0]) if not M[i].is_zero()], 
-          [j for j in range(M.dimensions()[1]) if not M[:,j].is_zero()]]
+    S = m.base_ring()
+    if I is None: I = S.ideal()
 
-    # if desired, one can avoid the complexity added by the recursive 
-    # procedure and localization ring and immediately return the result 
-    # by computing all the minors directly (which in some cases can be 
-    # prohibitively too many). To try this, uncomment the following line
-    # return Rorig.ideal(minors_sparse(M,r))
+    def getR(m,I,needed_ds):
+        if S.ngens() + needed_ds > m.base_ring().ngens():
+            numds = next(fibonacci(k) for k in range(2,1000) if fibonacci(k) >= needed_ds)
+            # print (numds)
+            R = PolynomialRing(S.base_ring(),S.gens() +
+                tuple('d%d' % i for i in range(numds)))
+            return m.change_ring(R),I.change_ring(R)
+        return m,I
 
-    try:
-        I = Rorig.defining_ideal()
-        R = Rorig.cover_ring()
-    except AttributeError:
-        I = Rorig.ideal(0)
-        R = Rorig
+    def rec(m,I,di,r):
+        if m.is_zero():
+            yield I.elimination_ideal(I.ring().gens()[S.ngens():]).change_ring(S)
+            return
+        if r <= 2:
+            I = I + m.minors(r)
+            yield I.elimination_ideal(I.ring().gens()[S.ngens():]).change_ring(S)
+            return
 
-    # M is assumed to have base ring of type MPolyQuoLoc
-    def rec(M,r):
-        R = M.base_ring()
-        # print R,',',r
-        if M.is_zero():
-            return R._ideal
-        if r == 1:
-            return R._ideal + [e._p for e in M.coefficients()]
+        f = Counter(m.dict().values()).most_common(1)[0][0]
+        m,I = getR(m,I,di+1)
 
-        e = Counter(M.dict().values()).most_common(1)[0][0]
+        # pass to the open set where f not identically zero, e.g., localize at f
+        Icur = I + [I.ring().gen(S.ngens()+di)*f - 1]
+        mcur,lo = sparse_elimination_by_units(m,Icur)
+        # print ('one',m.dimensions(),lo)
+        if lo < r:
+            for Iout in rec(mcur[lo:,lo:],Icur,di+1,r-lo):
+                yield Iout
 
-        R1 = MPolyQuoLoc(R.base(), R._ideal+e._p, R._den, nilpotents=False )
-        t = M.change_ring(R1)
-        t,lo = sparse_elimination_by_units(t)
-        I1 = rec(t[lo:,lo:],r-lo) if lo < r else R.base().ideal(1)
+        # pass to the closed set where f == 0
+        Icur = I + f
+        mcur,lo = sparse_elimination_by_units(m,Icur)
+        # print ('two',m.dimensions(),lo)
+        # print([t for ee in mnext.list() for t in ee.monomials()])
+        if lo < r:
+            for Iout in rec(mcur[lo:,lo:],Icur,di,r-lo):
+                yield Iout
 
-        R2 = MPolyQuoLoc(R.base(), R._ideal, R._den*e._p, nilpotents=False )
-        t = M.change_ring(R2)
-        t,lo = sparse_elimination_by_units(t)
-        I2 = rec(t[lo:,lo:],r-lo) if lo < r else R.base().ideal(1)
+    return S.ideal(1).intersection(*rec(m,I,0,r))
 
-        return I1.intersection(I2)
-
-    S = MPolyQuoLoc(R,I,1)
-    if R is Rorig:
-        return rec(M.change_ring(S),r)
-    else:
-        return rec(M.apply_map(lambda e:
-            e.lift()).change_ring(S),r).change_ring(Rorig)
-
-# M : matrix
-# r : natural number
-#
-# computes a list containing all the nonzero r by r minors of matrix M, 
-# optimizing for very sparse M
-def minors_sparse(M,r):
-    M = M[[i for i in range(M.dimensions()[0]) if not M[i].is_zero()], [j for j
-        in range(M.dimensions()[1]) if not M[:,j].is_zero()]]
-    a,b = M.dimensions()
-    out = []
-    for ix in combinations(range(a),r):
-        for jx in combinations([j for j in range(b) if not M[ix,j].is_zero()],r):
-            out.extend([e for e in M[ix,jx].minors(r) if not e.is_zero()])
-    return out
-
-# M : matrix
+# m : matrix
 # 
-# row reduces M as far as possible pivoting using unit entries. Column swaps are
-# also performed. M is modified in place and the number of pivots r is returned. 
-# After this operation, M has the form
+# row reduces m as far as possible pivoting using unit entries. Column swaps are
+# also performed. m is modified in place and the number of pivots r is returned. 
+# After this operation, m has the form
 # [ T A ]
 # [ 0 B ]
 # where T is r by r and  upper triangular with units along the diagonal, B 
 # contains no units
-def sparse_elimination_by_units(M):
-    M = copy(M)
-    def is_unit(e):
+from sage.libs.singular.function import singular_function
+lift = singular_function('lift')
+def sparse_elimination_by_units(m,I):
+    m = m.apply_map(lambda e: I.reduce(e))
+
+    def try_inverse(e):
         try:
-            return e.is_unit()
-        except NotImplementedError:
-            # This happens if we have an element of a coordinate ring which isnt constant.
-            # There is no harm to be conservative here
-            return False
+            return lift(I+e,1).list()[-1]
+        except RuntimeError:
+            return None
+
     r = 0
     while True:
-        if r == min(*M.dimensions()): break
-        try:
-            i,j = next((i+r,j+r) for i,j in M[r:,r:].nonzero_positions() if
-                    is_unit(M[i+r,j+r]))
-        except StopIteration:
+        if r == min(m.nrows(),m.ncols()):
             break
 
-        M.swap_rows(r,i)
-        M.swap_columns(r,j)
-        M[r,:] *= M[r,r].inverse_of_unit()
-        for i in M.column(r)[r+1:].nonzero_positions():
-            i += r+1
-            M.add_multiple_of_row(i,r,-M[i,r])
-        r += 1
-    return M,r
-
-# implementation of the ring R/I localized at a polynomial den, where R is a
-# multivariate polynomial ring, I an ideal, and den in R
-class MPolyQuoLoc(CommutativeRing):
-    def __init__(self, PolyR, I, den, nilpotents=True):
-        Ring.__init__(self, base=PolyR, category=CommutativeRings())
-        I = PolyR.ideal(I)
-        if not nilpotents: I = I.radical()
-        J,k = I.saturation(den)
-        if 1 in J:
-            raise ArithmeticError("invalid multiplicative set, (%s)^%d in %s" %
-                    (str(den),k,I))
-
-        self._ideal = PolyR.ideal(J.groebner_basis())
-        self._den = self._ideal.reduce(PolyR(den))
-        self._populate_coercion_lists_()
-
-    def _repr_(self):
-        return "%s mod %s localized at %s" % (self.base(), self._ideal, self._den)
-
-    def _element_constructor_(self, x):
-        if isinstance(x, MPolyQuoLocElement):
-            return MPolyQuoLocElement(self,x._p,0)*\
-                MPolyQuoLocElement(self,x.parent()._den,0).inverse_of_unit()^x._k
-        else:
-            return MPolyQuoLocElement(self,self.base()(x),0)
-
-    def _coerce_map_from_(self, S):
-        if S is self.base():
-            return True
-        elif isinstance(S, MPolyQuoLoc):
-            return self.base() == S.base() \
-                    and all(p in self._ideal for p in S._ideal.gens()) \
-                    and S._den.divides(self._den)
-
-class MPolyQuoLocElement(CommutativeRingElement):
-    def __init__(self, parent, p, k):
-        RingElement.__init__(self, parent)
-        if k < 0:
-            p *= parent._den^(-k)
-            k = 0
-        J = parent._ideal + parent._den
-        while k > 0:
-            try:
-                p = parent.base()(singular.lift(J,p).sage()[-1,0])
-            except TypeError: # p not in J
+        einv = None
+        for (i,j),e in m[r:,r:].dict().items():
+            einv = try_inverse(e)
+            if einv is not None:
                 break
-            k -= 1
-        p = parent._ideal.reduce(p)
-        self._p = p
-        self._k = k
+        if einv is None:
+            break
+        i += r
+        j += r
 
-    def _repr_(self):
-        if self._k > 0:
-            return "(%s)/(%s)^%d" % (self._p, self.parent()._den, self._k)
-        else:
-            return str(self._p)
- 
-    def _add_(left, right):
-        k = max(left._k, right._k)
-        return MPolyQuoLocElement(left.parent(), 
-                left._p*left.parent()._den^(k-right._k) + \
-                        right._p*left.parent()._den^(k-left._k), k)
- 
-    def _sub_(left, right):
-        k = max(left._k, right._k)
-        return MPolyQuoLocElement(left.parent(), 
-            left._p*left.parent()._den^(k-right._k) - \
-                    right._p*left.parent()._den^(k-left._k), k)
+        m.swap_rows(r,i)
+        m.swap_columns(r,j)
+        m[r,:] *= einv
+        for k in m.nonzero_positions_in_row(r):
+            m[r,k] = I.reduce(m[r,k])
+        assert m[r,r] == 1
+        for i in m.column(r)[r+1:].nonzero_positions():
+            i += r+1
+            m.add_multiple_of_row(i,r,-m[i,r])
+            for k in m.nonzero_positions_in_row(i):
+                m[i,k] = I.reduce(m[i,k])
+        r += 1
 
-    def _mul_(left, right):
-        return MPolyQuoLocElement(left.parent(), left._p * right._p, 
-                left._k + right._k)
- 
-    # c is guaranteed to be in parent().base()
-    def _rmul_(self, c):
-        return MPolyQuoLocElement(self.parent(), c * self._p, self._k)
- 
-    def _lmul_(self, c):
-        return MPolyQuoLocElement(self.parent(), self._p * c, self._k)
- 
-    @cached_method
-    def is_unit(self):
-        try:
-            self.inverse_of_unit()
-            return True
-        except ArithmeticError:
-            return False
- 
-    @cached_method
-    def inverse_of_unit(self):
-        J = self.parent().base().ideal(list(self.parent()._ideal.groebner_basis())+[self._p])
-        S,k = J.saturation(self.parent()._den)
-        if 1 not in S:
-            raise ArithmeticError("element is not a unit")
-        e = self.parent().base()(singular.lift(J,self.parent()._den^k).sage()[-1,0])
-        return MPolyQuoLocElement(self.parent(),e, k-self._k)
+    return m,r
+  
 
-    def _richcmp_(self, rhs, op):
-        from sage.structure.richcmp import richcmp
-        return richcmp((self._p,self._k),(rhs._p,rhs._k),op)
-
-    def __hash__(self):
-        return hash((self._p,self._k))
 
 @
 \subsection{Miscellaneous}
