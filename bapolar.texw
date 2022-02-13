@@ -668,45 +668,37 @@ def minors_ideal(m,r,I=None):
     S = m.base_ring()
     if I is None: I = S.ideal()
 
-    def getR(m,I,needed_ds):
-        if S.ngens() + needed_ds > m.base_ring().ngens():
-            numds = next(fibonacci(k) for k in range(2,1000) if fibonacci(k) >= needed_ds)
-            # print (numds)
-            R = PolynomialRing(S.base_ring(),S.gens() +
-                tuple('d%d' % i for i in range(numds)))
-            return m.change_ring(R),I.change_ring(R)
-        return m,I
+    R = PolynomialRing(S.base_ring(),S.gens()+('d',))
+    dv = R.gens()[-1]
 
-    def rec(m,I,di,r):
+    def rec(m,I,d,r):
         if m.is_zero():
-            yield I.elimination_ideal(I.ring().gens()[S.ngens():]).change_ring(S)
+            yield I
             return
-        if r <= 2:
-            I = I + m.minors(r)
-            yield I.elimination_ideal(I.ring().gens()[S.ngens():]).change_ring(S)
+        if r == 1:
+            yield I + m.coefficients()
             return
 
         f = Counter(m.dict().values()).most_common(1)[0][0]
-        m,I = getR(m,I,di+1)
 
         # pass to the open set where f not identically zero, e.g., localize at f
-        Icur = I + [I.ring().gen(S.ngens()+di)*f - 1]
-        mcur,lo = sparse_elimination_by_units(m,Icur)
-        # print ('one',m.dimensions(),lo)
+        mcur = m.subs({dv : dv*f})
+        Icur = I.elimination_ideal(dv) + [dv*d*f-1]
+        mcur,lo = sparse_elimination_by_units(mcur,Icur)
         if lo < r:
-            for Iout in rec(mcur[lo:,lo:],Icur,di+1,r-lo):
+            for Iout in rec(mcur[lo:,lo:],Icur,d*f,r-lo):
                 yield Iout
 
         # pass to the closed set where f == 0
         Icur = I + f
         mcur,lo = sparse_elimination_by_units(m,Icur)
-        # print ('two',m.dimensions(),lo)
-        # print([t for ee in mnext.list() for t in ee.monomials()])
         if lo < r:
-            for Iout in rec(mcur[lo:,lo:],Icur,di,r-lo):
+            for Iout in rec(mcur[lo:,lo:],Icur,d,r-lo):
                 yield Iout
 
-    return S.ideal(1).intersection(*rec(m,I,0,r))
+    return S.ideal(1).intersection(*(I.elimination_ideal(dv).change_ring(S)
+            for I in rec(m.change_ring(R), I.change_ring(R), R.one(), r)))
+    return rec(m.change_ring(R), I.change_ring(R), R.one(), r)
 
 # m : matrix
 # 
