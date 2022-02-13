@@ -150,13 +150,13 @@ def find_simple_roots(T,reps):
 # border apolarity specialized to cyclic invariant tensors, so only 110
 # candidates are computed. 
 def border_apolarity_cycl_inv(T,reps,r):
+    simple_roots = find_simple_roots(T,reps)
     reptp,em = Tperp_rep_and_embedding(T,reps)
-    wtd = weight_diagram(reptp)
-    # TODO fix after
+    wtd = weight_diagram(reptp,simple_roots)
 
     adim = len(T)
     cand110 = []
-    for ghwv in grassmannian_hwvs(mdata, em.dimensions()[0]-r):
+    for ghwv in borel_fixed_subspaces(wtd, em.nrows()-r):
         cand = em*ghwv
         cand = AB_grass_restrict_ok(cand,adim,r)
         if cand is not None:
