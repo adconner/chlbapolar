@@ -737,7 +737,7 @@ where $T$ is $r\times r$, upper triangular, with ones on the diagonal, and $B$
 contains no unit coefficients.
 <<complete=False>>=
 def elimination_by_units(m,I):
-    m = m.copy()
+    m = copy(m)
 
     from sage.libs.singular.function import singular_function
     lift = singular_function('lift')
