@@ -80,7 +80,7 @@ Apply the ideal enumeration algorithm up to the $(111)$-test, assuming $T$ has
 cyclic symmetry. Cyclic symmetry is used to avoid the computation of the $(101)$
 and $(011)$ candidates.
 <<complete=False>>=
-def border_apolarity_cycl_inv(T,reps,r):
+def border_apolarity_cycl_inv(T,reps,r,verbose=True):
     # Check that the data of reps actually stabilize $T$ and compute the simple roots
     simple_roots = check_T_is_stabilized(T,reps)
     # Find the representation data for $T(C^*)^\perp$ and report the matrix of
@@ -96,7 +96,7 @@ def border_apolarity_cycl_inv(T,reps,r):
     # by matrices Stperp over a polynomial ring and a corresponding ideal I the
     # coefficients of Stperp are considered modulo, i.e., the family takes
     # parameters in $V(I)$.
-    for Stperp,I in borel_fixed_subspaces(wtd, em.nrows()-r):
+    for Stperp,I in borel_fixed_subspaces(wtd, em.nrows()-r, verbose):
         # Embed into $A^*\ot B^*$
         Sab = em*Stperp
 
@@ -219,7 +219,7 @@ as the column space of matrices.
 <<complete=False>>=
 # mdata is the information for the module as summarized by weight_decomposition
 # subdim determines which grassmannian to consider (the dimension of the returned spaces)
-def borel_fixed_subspaces(wtd,D,verbose=True):
+def borel_fixed_subspaces(wtd,D,verbose=False):
     for i,dlambda in enumerate(possible_dim_assignments(wtd,D)):
         if verbose:
             print(i,end=' ')
@@ -249,7 +249,7 @@ def borel_fixed_subspaces_dlambda(wtd,dlambda,verbose=False):
     if verbose: 
         missing = [wt for wt,d in dlambda.items() if d < len(wtd.get_vertex(wt))]
         missing.sort(key=lambda wt: (sum(wt),wt))
-        print('grass hwv missing',missing)
+        print('missing',missing)
 
 
     if all(m == f or m == 0 for wt,m,f in dlist):
