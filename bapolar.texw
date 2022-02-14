@@ -510,8 +510,13 @@ def matrix_to_111(A,B,C):
     W = matrix(A.base_ring(),a*b*c,a*A.dimensions()[1]+b*B.dimensions()[1]+c*C.dimensions()[1],W)
     return W
 
-# given a set of vectors in A \ot B (in the form of an ab x S matrix), returns
-# the same set in B \ot A (in the orm of a ba x S matrix)
+@
+
+Given an $\aaa \bbb \times \sss$ matrix representing a map $S \to A\ot B$,
+returns the matrix of the same size corresponding to the map $S\to B\ot A$.
+Bases of tensor products are assumed to be lexicographically ordered product
+bases.
+<<complete=False>>=
 def transpose_tensor(B,a):
     b = B.dimensions()[0] // a
     S = B.dimensions()[1]
