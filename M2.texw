@@ -1,3 +1,20 @@
+\documentclass{amsart}
+\usepackage{amsmath,amssymb,amsthm,mathrsfs,microtype}
+\usepackage{minted}
+\usepackage[margin=1in]{geometry}
+
+
+\title{Appendix: $\underline{\mathbf{R}}(M_{\langle 2\rangle}) > 6$}
+
+\begin{document}
+\maketitle
+
+<<>>=
+# Add current directory to path to import bapolar
+import os
+import sys
+sys.path.append(os.getcwd())
+
 from sage.all import *
 import bapolar
 
@@ -50,10 +67,12 @@ reps = [
     ),
 ]
 
-res = bapolar.border_apolarity_cycl_inv(T, reps, 6)
+# for interactive use, turn verbose = True to show progress
+res = bapolar.border_apolarity_cycl_inv(T, reps, 6, verbose = False)
 
 print()
 print(len(res[1]), "110 candidates")
 print(len(res[0]), "111 candidates")
+@
 
-# vim: ft=python
+\end{document}

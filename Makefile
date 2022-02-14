@@ -18,3 +18,6 @@ pdfs: $(pdffiles)
 	pdflatex -shell-escape $<
 	pdflatex -shell-escape $<
 
+M2.pdf: bapolar.py
+M3.pdf: bapolar.py
+det3.pdf: bapolar.py
