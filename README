@@ -1,0 +1,15 @@
+These are the supplemental files for the article
+
+Austin Conner, Alicia Harper, Joseph M. Landsberg. New lower bounds for matrix
+multiplication and det_3. arXiv:1911.07981
+
+The supplemental code is written in a literate code style in the form of
+pweave documents, with .texw extension. Such a file represents code with
+inline latex documentation, and it can converted into a python file with code
+only or into a latex document with code highlighted and output included. The
+commands to make these conversions are in the Makefile, and all source files
+and output pdfs maybe obtained by running make (this requires the Python
+package pweave to be installed). For convenience, the corresponding pdfs and
+python files are provided in the pdf/ and py/ directories, respectively. The
+code requires SageMath modules to be available to run.
+
