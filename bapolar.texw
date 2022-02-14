@@ -87,7 +87,8 @@ def border_apolarity_cycl_inv(T,reps,r,verbose=True):
     simple_roots = check_T_is_stabilized(T,reps)
     # Find the representation data for $T(C^*)^\perp$ and report the matrix of
     # the embedding into $A^*\ot B^*$
-    reptp,em = Tperp_rep_and_embedding(T,reps) # Find teh weight diagram of $T(C^*)^\perp$
+    reptp,em = Tperp_rep_and_embedding(T,reps) 
+    # Find the weight diagram of $T(C^*)^\perp$
     wtd = weight_diagram(reptp,simple_roots)
 
     a = len(T)
@@ -129,7 +130,7 @@ def border_apolarity_cycl_inv(T,reps,r,verbose=True):
             sys.stdout.flush()
 
         W = matrix_to_111(*[x for _,x in xs])
-        if W.rank() <= W.dimensions()[0] - r:
+        if W.rank() <= W.nrows() - r:
             cand111.append(W)
     return cand111,cand110
 
@@ -437,8 +438,8 @@ $j_1 < j_2$ or $j_1=j_2$ and $i_1 < i_2$.
 
 <<complete=False>>=
 def matrix_11_to_21(B,a):
-    b = B.dimensions()[0] // a
-    S = B.dimensions()[1]
+    b = B.nrows() // a
+    S = B.ncols()
     W = {}
     # i,k < a
     # j < b
@@ -466,24 +467,24 @@ is the concatenation of the bases of the summands.
 
 <<complete=False>>=
 def matrix_to_111(A,B,C):
-    a = int(sqrt(B.dimensions()[0]*C.dimensions()[0]/A.dimensions()[0]))
-    b = C.dimensions()[0] // a
-    c = B.dimensions()[0] // a
+    a = int(sqrt(B.nrows()*C.nrows()/A.nrows()))
+    b = C.nrows() // a
+    c = B.nrows() // a
     W = {}
     for i in range(a):
         for I,l in A.nonzero_positions():
             j,k = I // c, I % c
-            W[((i*b+j)*c+k, i*A.dimensions()[1]+l)] = A[j*c+k,l]
+            W[((i*b+j)*c+k, i*A.ncols()+l)] = A[j*c+k,l]
     for j in range(b):
         for I,l in B.nonzero_positions():
             k,i = I // a, I % a
-            W[((i*b+j)*c+k, a*A.dimensions()[1] + j*B.dimensions()[1]+l)] = B[k*a+i,l]
+            W[((i*b+j)*c+k, a*A.ncols() + j*B.ncols()+l)] = B[k*a+i,l]
     for k in range(c):
         for I,l in C.nonzero_positions():
             i,j = I // b, I % b
-            W[((i*b+j)*c+k, a*A.dimensions()[1] + b*B.dimensions()[1] +\
-                    k*C.dimensions()[1]+l)] = C[i*b+j,l]
-    W = matrix(A.base_ring(),a*b*c,a*A.dimensions()[1]+b*B.dimensions()[1]+c*C.dimensions()[1],W)
+            W[((i*b+j)*c+k, a*A.ncols() + b*B.ncols() +\
+                    k*C.ncols()+l)] = C[i*b+j,l]
+    W = matrix(A.base_ring(),a*b*c,a*A.ncols()+b*B.ncols()+c*C.ncols(),W)
     return W
 
 @
@@ -495,13 +496,13 @@ bases.
 
 <<complete=False>>=
 def transpose_tensor(B,a):
-    b = B.dimensions()[0] // a
-    S = B.dimensions()[1]
+    b = B.nrows() // a
+    S = B.ncols()
     Bp = {}
     for I,k in B.nonzero_positions():
         i,j = I // b, I % b
         Bp[(j*a+i,k)] = B[I,k]
-    return matrix(B.base_ring(),B.dimensions()[0],B.dimensions()[1],Bp)
+    return matrix(B.base_ring(),B.nrows(),B.ncols(),Bp)
 
 @
 
