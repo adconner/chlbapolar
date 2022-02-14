@@ -99,6 +99,7 @@ a vector of integers.
 \section{Program Listing}
 
 <<complete=False>>=
+from sage.all import *
 from itertools import product,combinations
 
 @

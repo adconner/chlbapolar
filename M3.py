@@ -1,4 +1,5 @@
-load("bapolar.py")
+from sage.all import *
+import bapolar
 
 T = [
     matrix(QQ, 9, 9, {(0, 0): 1, (1, 3): 1, (2, 6): 1}),
@@ -78,7 +79,7 @@ reps = [
     ),
 ]
 
-res = border_apolarity_cycl_inv(T, reps, 16)
+res = bapolar.border_apolarity_cycl_inv(T, reps, 16)
 
 print()
 print(len(res[1]), "110 candidates")
