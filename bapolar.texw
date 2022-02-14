@@ -99,7 +99,6 @@ a vector of integers.
 \section{Program Listing}
 
 <<complete=False>>=
-
 from __future__ import print_function
 from IPython import embed
 from itertools import *
@@ -149,7 +148,6 @@ def find_simple_roots(T,reps):
 
 @
 <<complete=False>>=
-
 # border apolarity specialized to cyclic invariant tensors, so only 110
 # candidates are computed. 
 def border_apolarity_cycl_inv(T,reps,r):
@@ -250,7 +248,6 @@ A list of matrices with entries in the coordinate ring modulo these
 $Y_{d_\lambda}$ equations is returned.
 
 <<complete=False>>=
-
 def borel_fixed_subspaces_dlambda(wtd,dlambda,verbose=False):
 
     dlist = [(wt,d,len(wtd.get_vertex(wt))) for wt, d in dlambda.items()]
@@ -360,7 +357,6 @@ arrow $w : M_\mu \to M_\nu \to M_\lambda$. For a single arrow, conditions \eqref
         \operatorname{ker}\operatorname{dim} w + d_\lambda$.
 \end{enumerate}
 <<complete=False>>=
-
 def possible_dim_assignments(wtd,dim):
     lp = MixedIntegerLinearProgram()
     for wt in wtd:
@@ -433,7 +429,6 @@ def possible_dim_assignments(wtd,dim):
 @
 \subsection{$(210)$ and $(120)$ symmetrization maps, $(111)$ addition map}
 <<complete=False>>=
-
 # takes a grassmannian candidate, represented as the column space of the matrix
 # W, possibly with parameters, and performs the 210 and 120 tests. If no
 # parameter value satisfies the test, None is returned, otherwise, W is returned
@@ -619,7 +614,6 @@ of the corresponding raising operator. Each vertex records the ordered list of
 corresponding distinguished weight basis vectors (with respect to which the edge
 matrices are given).
 <<complete=False>>=
-
 def weight_diagram(rep,simple_roots):
     # tot = simultaneous_eigenspace(a[2])
     wts, xs = rep
@@ -649,7 +643,6 @@ def weight_diagram(rep,simple_roots):
 @
 \subsection{Efficiently computing the ideal of $r\times r$ minors}
 <<complete=False>>=
-
 # M : matrix
 # r : natural number 
 #
@@ -789,7 +782,6 @@ def elimination_by_units(m,I):
 @
 \subsection{Miscellaneous}
 <<complete=False>>=
-
 # T : tensor in A ot B ot C
 #
 # returns T permuted to lie in B ot C ot A
