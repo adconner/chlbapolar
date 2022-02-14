@@ -99,9 +99,7 @@ a vector of integers.
 \section{Program Listing}
 
 <<complete=False>>=
-from __future__ import print_function
-from IPython import embed
-from itertools import *
+from itertools import product,combinations
 
 @
 Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
