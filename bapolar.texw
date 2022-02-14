@@ -485,7 +485,7 @@ $\aaa\bbb \times \vvv$ matrices corresponding to maps $S \to B\ot C$, $U\to C\ot
 A$, $V\to A\ot B$, respectively. It is assumed that all tensor products are
 given with respect to lexicograpcally ordered product bases. This routine
 computes the matrix corresponding to the addition map 
-$ S\ot A \op U\ot B \op V \ot C \op B \to A\ot B\ot C$. Here tensor products are
+$ A\ot S \op B\ot U \op C \ot V \to A\ot B\ot C$. Here tensor products are
 given by lexicographically ordered product bases, and the basis of the direct sum
 is the concatenation of the bases of the summands.
 <<complete=False>>=
