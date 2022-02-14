@@ -625,7 +625,7 @@ def weight_diagram(rep,simple_roots):
     for wt in wtd:
         wt.set_immutable()
         for root,x in zip(simple_roots,xs):
-            wt_raised = immut(wt + root)
+            wt_raised = wt + root
             wt_raised.set_immutable()
             if wt_raised in wtd:
                 wtd.add_edge(wt,wt_raised,
@@ -759,10 +759,9 @@ def elimination_by_units(m,I):
 
 @
 \subsection{Miscellaneous}
+When $T\in A\ot B\ot C$, this function cyclicly permutes the factors to obtain a
+matrix $T\in B\ot C\ot A$. 
 <<complete=False>>=
-# T : tensor in A ot B ot C
-#
-# returns T permuted to lie in B ot C ot A
 def tensor_cycl(T):
     m = len(T)
     n,s = T[0].dimensions()
@@ -770,12 +769,5 @@ def tensor_cycl(T):
     for i,j,k in product(range(m),range(n),range(s)):
         S[j][k,i] = T[i][j,k]
     return S
-
-def immut(obj):
-    obj.set_immutable()
-    return obj
-
 @
-
-
 \end{document}
