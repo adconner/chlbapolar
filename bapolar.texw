@@ -122,8 +122,9 @@ def border_apolarity_cycl_inv(T,reps,r,verbose=True):
         if ixs != min([ixs,ixs[1:]+ixs[:1],ixs[2:]+ixs[:2]]):
             # Skip triples equal to others we check modulo cyclic permutation
             continue
-        print(ixs,end=' ')
-        sys.stdout.flush()
+        if verbose:
+            print(ixs,end=' ')
+            sys.stdout.flush()
 
         W = matrix_to_111(*[x for _,x in xs])
         if W.rank() <= W.dimensions()[0] - r:
