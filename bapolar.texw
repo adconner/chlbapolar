@@ -70,78 +70,11 @@ ensures that $T$ is actually fixed by the representation. % move to later
 
 The code is written in Python 3, using the libraries provided by SageMath.
 
-\subsection{Conventions}
-
-% \begin{center}
-% \begin{tabular}{lll}
-% Name & Object & Representation \\
-% \code{T} & $T$ & the list $[X_i]_i$, where each $X_i\in B\ot C$ is a matrix, 
-% $T = \sum_{i=1}^a a_i\ot X_i$ \\
-% \code{wt} & weight & tuple of integers \\
-% \code{wts} & weights of distinguished basis & List of weights
-% \end{tabular}
-% \end{center}
-
-\code{T}: The tensor $T$ represented as a list of length $\aaa$ of $\bbb \times
-\ccc$ matrices $[X_i]_i$. Here each $X_i$ represents an element of $B\ot C$, and
-$T=\sum_i a_i \ot X_i$.
-
-\code{wt}: A weight, represented as a Sage vector of integers.
-
-\code{wts}: A list of weights, e.g., the weights of a the distinguished
-base of a vector space.
-
-\code{wtss}: A list of length 3, each element of which is a list of the
-weights of the distinguished bases of each of $A$, $B$, and $C$. Each weight is
-a vector of integers.
-
-
 \section{Program Listing}
 
 <<complete=False>>=
 from sage.all import *
 from itertools import product,combinations
-
-@
-Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
-function checks checks the input data for correctness in various ways (see the 
-inline notes), and also computes the simple roots implied by the representation data.
-<<complete=False>>=
-def check_representations(T,reps):
-    a = len(T)
-    b,c = T[0].dimensions()
-
-    # There is one weight for each basis vector
-    assert all(len(wts) == d for d,(wts,_) in zip((a,b,c),reps))
-    # The given representations of $\mathfrak{n}$ operate on the correct dimensional space
-    assert all(x.nrows() == d and x.ncols() == d 
-            for d,(_,xs) in zip((a,b,c),reps) for x in xs)
-
-    # compute roots of the simple roots vectors xs
-    simple_roots = []
-    for xi in range(len(reps[0][1])):
-        for wts,xs in reps:
-            if not xs[xi].is_zero():
-                i,j = xs[xi].nonzero_positions()[0]
-                simple_roots.append(wts[i] - wts[j])
-                break
-
-    # Check xs are actally root vectors for the corresponding roots and that 
-    # the simple roots agree for each rep in reps
-    for wts,xs in reps:
-        assert len(simple_roots) == len(xs)
-        for root,x in zip(simple_roots,xs):
-            for i,j in x.nonzero_positions():
-                assert wts[i]-wts[j] == root
-
-    # Check T is weight zero in $A\ot B\ot C$
-    for i,m in enumerate(T):
-        for j,k in m.nonzero_positions():
-            assert (reps[0][0][i] + reps[1][0][j] + reps[2][0][k]).is_zero()
-
-    # TODO check if t is closed under the action of $\mathfrak{n}$
-
-    return simple_roots
 
 @
 Apply the ideal enumeration algorithm up to the $(111)$-test, assuming $T$ has
@@ -150,7 +83,7 @@ and $(011)$ candidates.
 <<complete=False>>=
 def border_apolarity_cycl_inv(T,reps,r):
     # Check that the data of reps actually stabilize $T$ and compute the simple roots
-    simple_roots = check_representations(T,reps)
+    simple_roots = check_T_is_stabilized(T,reps)
     # Find the representation data for $T(C^*)^\perp$ and report the matrix of
     # the embedding into $A^*\ot B^*$
     reptp,em = Tperp_rep_and_embedding(T,reps) # Find teh weight diagram of $T(C^*)^\perp$
@@ -198,6 +131,47 @@ def border_apolarity_cycl_inv(T,reps,r):
             cand111.append(W)
     return cand111,cand110
 
+@
+
+Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
+function checks checks the input data for correctness in various ways (see the 
+inline notes), and also computes the simple roots implied by the representation data.
+<<complete=False>>=
+def check_T_is_stabilized(T,reps):
+    a = len(T)
+    b,c = T[0].dimensions()
+
+    # There is one weight for each basis vector
+    assert all(len(wts) == d for d,(wts,_) in zip((a,b,c),reps))
+    # The given representations of $\mathfrak{n}$ operate on the correct dimensional space
+    assert all(x.nrows() == d and x.ncols() == d 
+            for d,(_,xs) in zip((a,b,c),reps) for x in xs)
+
+    # compute roots of the simple roots vectors xs
+    simple_roots = []
+    for xi in range(len(reps[0][1])):
+        for wts,xs in reps:
+            if not xs[xi].is_zero():
+                i,j = xs[xi].nonzero_positions()[0]
+                simple_roots.append(wts[i] - wts[j])
+                break
+
+    # Check xs are actally root vectors for the corresponding roots and that 
+    # the simple roots agree for each rep in reps
+    for wts,xs in reps:
+        assert len(simple_roots) == len(xs)
+        for root,x in zip(simple_roots,xs):
+            for i,j in x.nonzero_positions():
+                assert wts[i]-wts[j] == root
+
+    # Check T is weight zero in $A\ot B\ot C$
+    for i,m in enumerate(T):
+        for j,k in m.nonzero_positions():
+            assert (reps[0][0][i] + reps[1][0][j] + reps[2][0][k]).is_zero()
+
+    # TODO check if t is closed under the action of $\mathfrak{n}$
+
+    return simple_roots
 @
 
 \subsection {$\BB$-fixed subspace enumeration}
