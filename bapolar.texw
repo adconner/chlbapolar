@@ -76,9 +76,11 @@ from itertools import product,combinations
 
 @
 \subsection{Top level routines}
+\subsubsection{\code{border_apolarity_cycl_inv}}
 Apply the ideal enumeration algorithm up to the $(111)$-test, assuming $T$ has
 cyclic symmetry. Cyclic symmetry is used to avoid the computation of the $(101)$
 and $(011)$ candidates.
+
 <<complete=False>>=
 def border_apolarity_cycl_inv(T,reps,r,verbose=True):
     # Check that the data of reps actually stabilize $T$ and compute the simple roots
@@ -133,9 +135,11 @@ def border_apolarity_cycl_inv(T,reps,r,verbose=True):
 
 @
 
+\subsubsection{\code{check_T_is_stabilized}}
 Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
 function checks checks the input data for correctness in various ways (see the 
 inline notes), and also computes the simple roots implied by the representation data.
+
 <<complete=False>>=
 def check_T_is_stabilized(T,reps):
     a = len(T)
@@ -189,37 +193,34 @@ every raising operator $x$ corresponding to an arrow $M_\lambda \to M_\mu$ in th
 weight diagram (see \S2.5.2 of the article). This parameterization is composed
 of two components, the combinatorial data $d_\lambda =
 \operatorname{dim} S_\lambda$, and the subvariety $Y_{d_\lambda}$ of the product of
-Grassmannians $X_{d_\lambda} = \prod_{\lambda} Gr(M_\lambda,d_\lambda)$ corresponding to
+Grassmannians $X_{d_\lambda} = \prod_{\lambda} G(d_\lambda,M_\lambda)$ corresponding to
 the condition on weight diagram arrows above.
 
 For fixed $D$, most assignments $\lambda \mapsto d_\lambda$ satisfying
-$\sum_\lambda d_\lambda = D$ have $Y_d = \varnothing$, and to explicitly check
+$\sum_\lambda d_\lambda = D$ have $Y_{d_\lambda} = \varnothing$, and to explicitly check
 each such $d_\lambda$ would be impossible. Hence, we investigate only such assignments
 $d_\lambda$ satisfying necessary conditions for $Y_d\ne \varnothing$. These conditions
 take the form of linear inequalities. Thus, the assignments
 we explicitly consider occur as the set of integer points of a
-polytope, which can be efficiently enumerated.
+polytope, which can be efficiently enumerated. The enumeration of integer
+points of this polytope is done by \code{possible_dim_assignments}
+(\S\ref{possible_dim_assignments}), and the parameterization of $Y_{d_\lambda}$
+is performed by \code{borel_fixed_subspaces_dlambda}
+(\S\ref{borel_fixed_subspaces_dlambda}). The two elements of the
+enumeration are combined in
+\code{borel_fixed_subspaces} (\ref{borel_fixed_subspaces}).
 
+\subsubsection{\code{borel_fixed_subspaces}}\label{borel_fixed_subspaces}
+Given a weight diagram \code{wtd} and an integer $D$, this function returns a
+generator yielding a set of families of $\BB$-fixed subspaces of dimension $D$
+of the module corresponding to \code{wtd} which together exhaust all such
+families. Each family is given as pair of (i) a matrix with coefficients in a
+polynomial ring and (ii) an ideal $I$ of the coefficient ring. The coefficients
+of the matrix should be interpreted mod $I$, i.e., the matrix should be
+interpreted as a family of matrices over $\CC$ parameterized by $V(I)$. The
+image of such a matrix is the corresponding $\BB$-fixed subspace.
 
-% We may parameterize the $\fb_T$ fixed subspaces $M$ of dimension $d$ as follows: Fix an assignment of dimensions $d_\lambda$, $0\le d_\lambda \le \tdim M_\lambda$,
-% $\sum_\lambda d_\lambda = d$. Choices of $S_\lambda$ with $\dim S_\lambda = d_\lambda$ are
-% parameterized by the product of Grassmannians $X = \prod_{\lambda} G(M_\lambda,d_\lambda)$.
-% Given a raising operator $x$ corresponding to an arrow $M_\lambda \to M_\mu$ in the
-% weight diagram, the condition that $x. S_\lambda
-% \subset S_{\mu}$ is an explicit polynomial condition on $X$. Cutting
-% $X$ by all such polynomials gives a description of the set of $\fb_T$ fixed
-% subspaces with $\dim S_\lambda = d_\lambda$ (which can be empty). All Borel fixed
-% subspaces are obtained as $d_\lambda$ ranges over all such assignments.
-% In small examples, a complete list of $\fb_T$ fixed subspaces may frequently be
-% read off of the weight diagram.
-
-This function returns a generator yielding the set of highest weight vectors 
-of the grassmannian, each possibly parameterized (having entries in a
-polynomial ring modulo an ideal). The grassmannian planes are represented 
-as the column space of matrices.
 <<complete=False>>=
-# mdata is the information for the module as summarized by weight_decomposition
-# subdim determines which grassmannian to consider (the dimension of the returned spaces)
 def borel_fixed_subspaces(wtd,D,verbose=False):
     for i,dlambda in enumerate(possible_dim_assignments(wtd,D)):
         if verbose:
@@ -228,12 +229,13 @@ def borel_fixed_subspaces(wtd,D,verbose=False):
             yield S
 
 @
+\subsubsection{\code{borel_fixed_subspaces_dlambda}}\label{borel_fixed_subspaces_dlambda}
 Given a weight diagram and an assignment $\lambda \mapsto d_\lambda$, this
 function enumerates corresponding matrices corresponding to $Y_{d_\lambda}$.
 
-A Grassmannian $Gr(V,s)$ may be represented in bases as $s\times \vvv$ matrix
+A Grassmannian $G(s,V)$ may be represented in bases as $s\times \vvv$ matrix
 modulo the left action of $\operatorname{GL}(s)$. A normal form for this
-action is ordinary echelon form of the matrix, so $Gr(V,s)$ may be written as a
+action is ordinary echelon form of the matrix, so $G(s,V)$ may be written as a
 disjoint union of affine spaces according to the pivot columns of echelon forms.
 
 Thus, the set $X_{d_\lambda}$ is parameterized by combinations of such choices
@@ -320,6 +322,7 @@ def borel_fixed_subspaces_dlambda(wtd,dlambda,verbose=False):
         print()
 
 @
+\subsubsection{\code{possible_dim_assignments}}\label{possible_dim_assignments}
 Given a weight diagram \code{wtd} and a target dimension \code{dim}, this
 function computes the integer points $d_\lambda$ of the polytope corresponding
 to the following necessary conditions that assignments $d_\lambda$ have
@@ -350,6 +353,7 @@ arrow $w : M_\mu \to M_\nu \to M_\lambda$. For a single arrow, conditions \eqref
         and \eqref{dual} are the same: $d_\mu \le
         \operatorname{ker}\operatorname{dim} w + d_\lambda$.
 \end{enumerate}
+
 <<complete=False>>=
 def possible_dim_assignments(wtd,dim):
     lp = MixedIntegerLinearProgram()
@@ -422,6 +426,7 @@ def possible_dim_assignments(wtd,dim):
 @
 \subsection{$(210)$ and $(120)$ symmetrization maps, $(111)$ addition map}
 
+\subsubsection{\code{matrix_11_to_21}}\label{matrix_11_to_21}
 If $B$ is the $\aaa \bbb\times \vvv$ matrix of a map $V \to A\ot B$ with respect
 to an lexicographically ordered basis of $A\ot B$ of the form $a_i \ot b_j$,
 this routine computes the matrix of the map $V \ot A \to S^2 A\ot B$. The bases
@@ -429,6 +434,7 @@ of the tensor products are also lexicographically ordered tensor
 products. The basis $a_ia_j$, $i\le j$, of $S^2 A$ is ordered reverse
 lexicographically: $a_{i_1}a_{j_1} $ comes before $a_{i_2}a_{j_2}$ if either
 $j_1 < j_2$ or $j_1=j_2$ and $i_1 < i_2$.
+
 <<complete=False>>=
 def matrix_11_to_21(B,a):
     b = B.dimensions()[0] // a
@@ -448,6 +454,7 @@ def matrix_11_to_21(B,a):
     return W
 
 @
+\subsubsection{\code{matrix_to_111}}\label{matrix_to_111}
 Suppose $A$,$B$, and $C$ are $\bbb\ccc \times \sss$, $\ccc\aaa \times \uuu$, and
 $\aaa\bbb \times \vvv$ matrices corresponding to maps $S \to B\ot C$, $U\to C\ot
 A$, $V\to A\ot B$, respectively. It is assumed that all tensor products are
@@ -456,6 +463,7 @@ computes the matrix corresponding to the addition map
 $ A\ot S \op B\ot U \op C \ot V \to A\ot B\ot C$. Here tensor products are
 given by lexicographically ordered product bases, and the basis of the direct sum
 is the concatenation of the bases of the summands.
+
 <<complete=False>>=
 def matrix_to_111(A,B,C):
     a = int(sqrt(B.dimensions()[0]*C.dimensions()[0]/A.dimensions()[0]))
@@ -479,11 +487,12 @@ def matrix_to_111(A,B,C):
     return W
 
 @
-
+\subsubsection{\code{transpose_tensor}}\label{transpose_tensor}
 Given an $\aaa \bbb \times \sss$ matrix representing a map $S \to A\ot B$,
 returns the matrix of the same size corresponding to the map $S\to B\ot A$.
 Bases of tensor products are assumed to be lexicographically ordered product
 bases.
+
 <<complete=False>>=
 def transpose_tensor(B,a):
     b = B.dimensions()[0] // a
@@ -497,12 +506,14 @@ def transpose_tensor(B,a):
 @
 
 \subsection{Representation manipulation}
+\subsubsection{\code{Tperp_rep_and_embedding}}\label{Tperp_rep_and_embedding}
 Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
 function computes the representation of $T(C^*)^\perp \subset A^*\ot B^*$ and
 the matrix of the embedding of the distinguished weight bases of these modules.
 Optionally, the parameter \code{missing} may be set to $0$ to instead compute
 this information for $T(A^*)^\perp \subset B^*\ot C^*$ or to $1$ to do this for  
 $T(B^*)^\perp \subset C^*\ot A^*$.
+
 <<complete=False>>=
 def Tperp_rep_and_embedding(T,reps,missing=2):
     reps = reps[missing+1:] + reps[:missing]
@@ -518,11 +529,13 @@ def Tperp_rep_and_embedding(T,reps,missing=2):
     return reptp,em
 
 @
+\subsubsection{\code{module_product}}\label{module_product}
 When \code{repa} and \code{repb} describe the representations of $V$, and $W$,
 respectively this function computes description of the representation of $V\ot
 W$. The distinguished weight basis of the tensor product is $v_i \ot w_j$
 ordered lexicographically, where $w_i$ and $w_j$ are the distinguished weight
 bases of $V$ and $W$, respectively. 
+
 <<complete=False>>=
 def module_product(repa,repb):
     wtsa, xsa = repa
@@ -536,9 +549,11 @@ def module_product(repa,repb):
     return (wtsab,xsab)
 
 @
+\subsubsection{\code{module_dual}}\label{module_dual}
 When \code{rep} describe the representation of $V$,
 this function computes the description of the representation $V^*$.
 The distinguished weight basis of $V^*$ is the dual basis of that of $V$.
+
 <<complete=False>>=
 def module_dual(rep):
     wts, xs = rep
@@ -547,12 +562,14 @@ def module_dual(rep):
     return (wtsd,xsd)
 
 @
+\subsubsection{\code{submodule_from_basis}}\label{submodule_from_basis}
 Here, \code{rep} describes the representation of $V$, and \code{em} is an $\vvv \times
 \www$ matrix containing as columns a weight basis of a submodule $W$ of $V$,
 e.g., it is the matrix of the embedding $W\to V$.
 This function computes the description of the representation $W$ with respect to
 this basis. The facts that $B$ describes a weight basis and that $W$ is a
 $\BB$-submodule of $V$ are checked.
+
 <<complete=False>>=
 def submodule_from_basis(rep,em):
     wts, xs = rep
@@ -580,12 +597,14 @@ def submodule_from_basis(rep,em):
     return (wtsw,xsw)
 
 @
+\subsubsection{\code{weight_diagram}}\label{weight_diagram}
 Given a representation \code{rep} and the set of simple roots consistent with
 it, this routine computes the corresponding weight diagram, a directed graph
 with vertices labelled by weights and with edges labelled with the matrix of the restriction
 of the corresponding raising operator. Each vertex records the ordered list of
 corresponding distinguished weight basis vectors (with respect to which the edge
 matrices are given).
+
 <<complete=False>>=
 def weight_diagram(rep,simple_roots):
     # tot = simultaneous_eigenspace(a[2])
@@ -615,9 +634,9 @@ def weight_diagram(rep,simple_roots):
 
 @
 \subsection{Efficiently computing the ideal of $r\times r$ minors}
-
+\subsubsection{\code{minors_ideal}}\label{minors_ideal}
 Given an integer $r$ and a matrix $m$ with entries in a polynomial ring interepreted modulo the
-ideal $I$, an ideal $J\supset I$ is computed which set theoretically cuts out
+ideal $I$, this function computes an ideal $J\supset I$ which set theoretically cuts out
 the closed set $X$ on which $m$ has rank at most $r-1$. That is, if $I_r$ is the
 ideal generated by the $r\times r$ minors of $m$, then $I_r+I \subset J \subset
 \sqrt{I_r+I}$.
@@ -680,6 +699,7 @@ def minors_ideal(m,r,I=None):
     return rec(m.change_ring(R), I.change_ring(R), R.one(), r)
 
 @
+\subsubsection{\code{elimination_by_units}}\label{elimination_by_units}
 This routine implements row elimination by unit coefficients of $m$ mod $I$
 with column pivoting. It returns the resulting matrix $m'$ and a number $r$. 
 $m'$ has the form
@@ -691,6 +711,7 @@ T & A \\
 \]
 where $T$ is $r\times r$, upper triangular, with ones on the diagonal, and $B$
 contains no unit coefficients.
+
 <<complete=False>>=
 def elimination_by_units(m,I):
     m = m.apply_map(lambda e: I.reduce(e))
@@ -739,8 +760,10 @@ def elimination_by_units(m,I):
 
 @
 \subsection{Miscellaneous}
+\subsubsection{\code{tensor_cycl}}\label{tensor_cycl}
 When $T\in A\ot B\ot C$, this function cyclicly permutes the factors to obtain a
 matrix $T\in B\ot C\ot A$. 
+
 <<complete=False>>=
 def tensor_cycl(T):
     m = len(T)
