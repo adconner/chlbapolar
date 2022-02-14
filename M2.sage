@@ -1,29 +1,58 @@
-T = [matrix(ZZ, 4, 4, {(0,0):1, (1,2):1}), matrix(ZZ, 4, 4, {(2,0):1, (3,2):1}), matrix(ZZ, 4, 4, {(0,1):1, (1,3):1}), matrix(ZZ, 4, 4, {(2,1):1, (3,3):1})]
+load("bapolar.py")
 
-reps = [ [ [
-    matrix(QQ, 4, 4, {(0,2):1, (1,3):1}), matrix(QQ, 4, 4, {(1,0):-1, (3,2):-1}), matrix(QQ, 4, 4, {})], [
-    matrix(QQ, 4, 4, {(2,0):1, (3,1):1}), matrix(QQ, 4, 4, {(0,1):-1, (2,3):-1}), matrix(QQ, 4, 4, {})], [
-    matrix(QQ, 4, 4, {(0,0):1, (1,1):1, (2,2):-1, (3,3):-1}), matrix(QQ, 4, 4, {(0,0):-1, (1,1):1, (2,2):-1, (3,3):1}), matrix(QQ, 4, 4, {})]], [
-[
-    matrix(QQ, 4, 4, {}), matrix(QQ, 4, 4, {(0,2):1, (1,3):1}), matrix(QQ, 4, 4, {(1,0):-1, (3,2):-1})], [
-    matrix(QQ, 4, 4, {}), matrix(QQ, 4, 4, {(2,0):1, (3,1):1}), matrix(QQ, 4, 4, {(0,1):-1, (2,3):-1})], [
-    matrix(QQ, 4, 4, {}), matrix(QQ, 4, 4, {(0,0):1, (1,1):1, (2,2):-1, (3,3):-1}), matrix(QQ, 4, 4, {(0,0):-1, (1,1):1, (2,2):-1, (3,3):1})]], [
-[
-    matrix(QQ, 4, 4, {(1,0):-1, (3,2):-1}), matrix(QQ, 4, 4, {}), matrix(QQ, 4, 4, {(0,2):1, (1,3):1})], [
-    matrix(QQ, 4, 4, {(0,1):-1, (2,3):-1}), matrix(QQ, 4, 4, {}), matrix(QQ, 4, 4, {(2,0):1, (3,1):1})], [
-    matrix(QQ, 4, 4, {(0,0):-1, (1,1):1, (2,2):-1, (3,3):1}), matrix(QQ, 4, 4, {}), matrix(QQ, 4, 4, {(0,0):1, (1,1):1, (2,2):-1, (3,3):-1})]]]
+T = [
+    matrix(ZZ, 4, 4, {(0, 0): 1, (1, 2): 1}),
+    matrix(ZZ, 4, 4, {(2, 0): 1, (3, 2): 1}),
+    matrix(ZZ, 4, 4, {(0, 1): 1, (1, 3): 1}),
+    matrix(ZZ, 4, 4, {(2, 1): 1, (3, 3): 1}),
+]
 
-C = matrix(QQ,[[2, 0, 0], [0, 2, 0], [0, 0, 2]])
+reps = [
+    (
+        [
+            vector(ZZ, [1, -1, 0]),
+            vector(ZZ, [1, 1, 0]),
+            vector(ZZ, [-1, -1, 0]),
+            vector(ZZ, [-1, 1, 0]),
+        ],
+        [
+            matrix(QQ, 4, 4, {(0, 2): 1, (1, 3): 1}),
+            matrix(QQ, 4, 4, {(1, 0): -1, (3, 2): -1}),
+            matrix(QQ, 4, 4, {}),
+        ],
+    ),
+    (
+        [
+            vector(ZZ, [0, 1, -1]),
+            vector(ZZ, [0, 1, 1]),
+            vector(ZZ, [0, -1, -1]),
+            vector(ZZ, [0, -1, 1]),
+        ],
+        [
+            matrix(QQ, 4, 4, {}),
+            matrix(QQ, 4, 4, {(0, 2): 1, (1, 3): 1}),
+            matrix(QQ, 4, 4, {(1, 0): -1, (3, 2): -1}),
+        ],
+    ),
+    (
+        [
+            vector(ZZ, [-1, 0, 1]),
+            vector(ZZ, [1, 0, 1]),
+            vector(ZZ, [-1, 0, -1]),
+            vector(ZZ, [1, 0, -1]),
+        ],
+        [
+            matrix(QQ, 4, 4, {(1, 0): -1, (3, 2): -1}),
+            matrix(QQ, 4, 4, {}),
+            matrix(QQ, 4, 4, {(0, 2): 1, (1, 3): 1}),
+        ],
+    ),
+]
 
-# x^1_2 y^1_1 (36,34) -> x^2_1 y^2_2
-# x^1_1y^1_2-x^1_2y^2_2 (35,35) 
-# x^2_2 y^1_2 (34,36) -> x^1_1 y^2_1
+res = border_apolarity_cycl_inv(T, reps, 6)
 
-def new_from_old(reps):
-    repsn = []
-    for xs,ys,hs in reps:
-        repsn.append((([vector(ZZ,[h[i,i] for h in hs]) for i in range(hs[0].nrows())]),xs))
-    return repsn
+print()
+print(len(res[1]), "110 candidates")
+print(len(res[0]), "111 candidates")
 
 # vim: ft=python
- 
