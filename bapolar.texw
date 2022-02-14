@@ -168,9 +168,16 @@ def check_T_is_stabilized(T,reps):
     for i,m in enumerate(T):
         for j,k in m.nonzero_positions():
             assert (reps[0][0][i] + reps[1][0][j] + reps[2][0][k]).is_zero()
-
-    # TODO check if t is closed under the action of $\mathfrak{n}$
-
+    
+    # Check T is closed under $\mathfrak{n}$
+    (_,xsA), (_,xsB), (_,xsC) = reps
+    for xa,xb,xc in zip(xsA, xsB, xsC):
+        xaT = [sum(xa[i,j] * T[j] for j in range(a)) for i in range(a)]
+        xbT = [xb*m for m in T]
+        xcT = [m*xc.T for m in T]
+        # we should have xaT + xbT + xcT = 0
+        assert all((m1+m2+m3).is_zero() for m1,m2,m3 in zip(xaT, xbT, xcT))
+    
     return simple_roots
 @
 
