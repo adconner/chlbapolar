@@ -63,12 +63,10 @@ along with the representations $\mathfrak{n} \to
 by giving the matrix of the action of the simple root vectors in the
 distinguished bases.
 
-The function \code{check_input} takes $T$ and this representation data and
-ensures that $T$ is actually fixed by the representation. % move to later
-
 \subsection{Software used}
 
-The code is written in Python 3, using the libraries provided by SageMath.
+The code is written in Python 3, using the libraries provided by SageMath. It
+has been tested with SageMath 9.5.
 
 \section{Program Listing}
 
@@ -77,6 +75,7 @@ from sage.all import *
 from itertools import product,combinations
 
 @
+\subsection{Top level routines}
 Apply the ideal enumeration algorithm up to the $(111)$-test, assuming $T$ has
 cyclic symmetry. Cyclic symmetry is used to avoid the computation of the $(101)$
 and $(011)$ candidates.
