@@ -34,9 +34,7 @@ def border_apolarity_cycl_inv(T,reps,r,verbose=True):
         # Check if the family is nonempty
         if QQ(1) not in I:
             # If there is a single solution in the family add it to cand110,
-            # otherwise raise an error. This is sufficient for $M_{\langle 3\rangle}$ and $\operatorname{det}_3$, 
-            # and more generally one can go on to apply the $(111)$ test to
-            # parameterized families of candidate triples
+            # otherwise raise an error. This is sufficient for $M_{\langle 3\rangle}$ and $\operatorname{det}_3$.
             cand110.append(Sab.apply_map(lambda e: QQ(I.reduce(e)), QQ))
 
     cand111 = []
@@ -58,13 +56,13 @@ def check_T_is_stabilized(T,reps):
     a = len(T)
     b,c = T[0].dimensions()
 
-    # There is one weight for each basis vector
+    # Check there is one weight for each basis vector
     assert all(len(wts) == d for d,(wts,_) in zip((a,b,c),reps))
-    # The given representations of $\mathfrak{n}$ operate on the correct dimensional space
+    # Check the given representations of $\mathfrak{n}$ operate on the correct dimensional space
     assert all(x.nrows() == d and x.ncols() == d 
             for d,(_,xs) in zip((a,b,c),reps) for x in xs)
 
-    # compute roots of the simple roots vectors xs
+    # Compute roots of the simple roots vectors xs
     simple_roots = []
     for xi in range(len(reps[0][1])):
         for wts,xs in reps:
@@ -124,9 +122,7 @@ def borel_fixed_subspaces_dlambda(wtd,dlambda,verbose=False):
 
     # Otherwise, we need parameters. Here we check all combinations of choices
     # of pivot columns in each grassmannian
-
     for nzsi,nzs in enumerate(product(*[combinations(range(f),m) for wt,m,f in dlist])):
-
         if verbose:
             print(nzsi,end=' ')
             sys.stdout.flush()

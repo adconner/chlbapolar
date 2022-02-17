@@ -45,7 +45,7 @@ may have entries in the coordinate ring of some affine variety.
 The same computation with the roles of $A$, $B$, and $C$ permuted may be
 performed to enumerate the candidate $F_{101}$ and $F_{011}$ subspaces.
 Given a triple of candidates $(F_{110}, F_{101}, F_{011})$, a routine to apply
-the (111)-test is provided. That is, the map
+the (111) test is provided. That is, the map
 \begin{equation}\label{111map}
 F_{110}\ot C^*\op F_{101}\ot B^*\op F_{011}\ot A^* \to A^*\ot B^*\ot C^*
 \end{equation}
@@ -59,7 +59,7 @@ $G_T$. The tensor $T$ is described by its coefficients with respect to these
 bases. The action of $\BB_T$ is described by the weights of the basis vectors
 along with the representations $\mathfrak{n} \to
 \mathfrak{gl}(A)$, $\mathfrak{n} \to \mathfrak{gl}(B)$, and $\mathfrak{n} \to
-\mathfrak{gl}(C)$. Concretely, Representations of $\mathfrak{n}$ are described
+\mathfrak{gl}(C)$. Concretely, representations of $\mathfrak{n}$ are described
 by giving the matrix of the action of the simple root vectors in the
 distinguished bases.
 
@@ -77,7 +77,7 @@ from itertools import product,combinations
 @
 \subsection{Top level routines}
 \subsubsection{\code{border_apolarity_cycl_inv}}
-Apply the ideal enumeration algorithm up to the $(111)$-test, assuming $T$ has
+Apply the ideal enumeration algorithm up to the $(111)$ test, assuming $T$ has
 cyclic symmetry. Cyclic symmetry is used to avoid the computation of the $(101)$
 and $(011)$ candidates.
 
@@ -114,9 +114,7 @@ def border_apolarity_cycl_inv(T,reps,r,verbose=True):
         # Check if the family is nonempty
         if QQ(1) not in I:
             # If there is a single solution in the family add it to cand110,
-            # otherwise raise an error. This is sufficient for $M_{\langle 3\rangle}$ and $\operatorname{det}_3$, 
-            # and more generally one can go on to apply the $(111)$ test to
-            # parameterized families of candidate triples
+            # otherwise raise an error. This is sufficient for $M_{\langle 3\rangle}$ and $\operatorname{det}_3$.
             cand110.append(Sab.apply_map(lambda e: QQ(I.reduce(e)), QQ))
 
     cand111 = []
@@ -138,7 +136,7 @@ def border_apolarity_cycl_inv(T,reps,r,verbose=True):
 
 \subsubsection{\code{check_T_is_stabilized}}
 Given $T\in A\ot B\ot C$ and the representations of $A$, $B$, and $C$, this
-function checks checks the input data for correctness in various ways (see the 
+function checks the input data for correctness in various ways (see the 
 inline notes), and also computes the simple roots implied by the representation data.
 
 <<complete=False>>=
@@ -146,13 +144,13 @@ def check_T_is_stabilized(T,reps):
     a = len(T)
     b,c = T[0].dimensions()
 
-    # There is one weight for each basis vector
+    # Check there is one weight for each basis vector
     assert all(len(wts) == d for d,(wts,_) in zip((a,b,c),reps))
-    # The given representations of $\mathfrak{n}$ operate on the correct dimensional space
+    # Check the given representations of $\mathfrak{n}$ operate on the correct dimensional space
     assert all(x.nrows() == d and x.ncols() == d 
             for d,(_,xs) in zip((a,b,c),reps) for x in xs)
 
-    # compute roots of the simple roots vectors xs
+    # Compute roots of the simple roots vectors xs
     simple_roots = []
     for xi in range(len(reps[0][1])):
         for wts,xs in reps:
@@ -203,8 +201,9 @@ each such $d_\lambda$ would be impossible. Hence, we investigate only such assig
 $d_\lambda$ satisfying necessary conditions for $Y_d\ne \varnothing$. These conditions
 take the form of linear inequalities. Thus, the assignments
 we explicitly consider occur as the set of integer points of a
-polytope, which can be efficiently enumerated. The enumeration of integer
-points of this polytope is done by \code{possible_dim_assignments}
+polytope, which can be efficiently enumerated. The formation of this polytope
+and the enumeration of its integer
+points is done by \code{possible_dim_assignments}
 (\S\ref{possible_dim_assignments}), and the parameterization of $Y_{d_\lambda}$
 is performed by \code{borel_fixed_subspaces_dlambda}
 (\S\ref{borel_fixed_subspaces_dlambda}). The two elements of the
@@ -215,7 +214,7 @@ enumeration are combined in
 Given a weight diagram \code{wtd} and an integer $D$, this function returns a
 generator yielding a set of families of $\BB$-fixed subspaces of dimension $D$
 of the module corresponding to \code{wtd} which together exhaust all such
-families. Each family is given as pair of (i) a matrix with coefficients in a
+subspaces. Each family is given as pair of (i) a matrix with coefficients in a
 polynomial ring and (ii) an ideal $I$ of the coefficient ring. The coefficients
 of the matrix should be interpreted mod $I$, i.e., the matrix should be
 interpreted as a family of matrices over $\CC$ parameterized by $V(I)$. The
@@ -232,18 +231,17 @@ def borel_fixed_subspaces(wtd,D,verbose=False):
 @
 \subsubsection{\code{borel_fixed_subspaces_dlambda}}\label{borel_fixed_subspaces_dlambda}
 Given a weight diagram and an assignment $\lambda \mapsto d_\lambda$, this
-function enumerates corresponding matrices corresponding to $Y_{d_\lambda}$.
+function enumerates matrices corresponding to $Y_{d_\lambda}$.
 
 A Grassmannian $G(s,V)$ may be represented in bases as $s\times \vvv$ matrix
-modulo the left action of $\operatorname{GL}(s)$. A normal form for this
+modulo the left action of $\operatorname{GL}_s$. A normal form for this
 action is ordinary echelon form of the matrix, so $G(s,V)$ may be written as a
 disjoint union of affine spaces according to the pivot columns of echelon forms.
 
 Thus, the set $X_{d_\lambda}$ is parameterized by combinations of such choices
 of pivot columns in each weight space. This function looks at each of these and
-computes the variety corresponding to the intersection with $Y_{d_\lambda}$. 
-A list of matrices with entries in the coordinate ring modulo these
-$Y_{d_\lambda}$ equations is returned.
+computes the ideal of equations corresponding to the intersection with $Y_{d_\lambda}$. 
+A list of matrices with polynomial entries and corresponding ideals is returned.
 
 <<complete=False>>=
 def borel_fixed_subspaces_dlambda(wtd,dlambda,verbose=False):
@@ -266,9 +264,7 @@ def borel_fixed_subspaces_dlambda(wtd,dlambda,verbose=False):
 
     # Otherwise, we need parameters. Here we check all combinations of choices
     # of pivot columns in each grassmannian
-
     for nzsi,nzs in enumerate(product(*[combinations(range(f),m) for wt,m,f in dlist])):
-
         if verbose:
             print(nzsi,end=' ')
             sys.stdout.flush()
